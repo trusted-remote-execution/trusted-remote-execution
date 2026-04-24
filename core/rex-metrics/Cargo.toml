@@ -1,0 +1,20 @@
+[package]
+name = "rex-metrics-and-alarms"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[features]
+# Enable shared registry functionality for thread-safe alarm and metric registries
+shared-registry = []
+
+[dependencies]
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+derive_builder = "0.20.2"
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+strum_macros = "0.25"
+dashmap = "5.5"
+strum = "0.25"

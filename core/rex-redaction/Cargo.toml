@@ -1,0 +1,12 @@
+[package]
+name = "rex-redaction"
+version.workspace = true
+edition.workspace = true
+
+publish = false
+
+[features]
+redaction-converter = []
+
+[dev-dependencies]
+rstest = "0.25"

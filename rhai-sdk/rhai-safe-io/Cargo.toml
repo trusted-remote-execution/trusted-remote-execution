@@ -1,0 +1,48 @@
+[package]
+name = "rhai-safe-io"
+version.workspace = true
+edition.workspace = true
+
+publish = false
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*" }
+rust-sdk-common-utils = { path = "../../rust-sdk/sdk-common-utils", version = "*" }
+rust-safe-io = { path = "../../rust-sdk/safe-io", version = "*" }
+anyhow = "1.0.94"
+assertables = "9.5.0"
+assert_fs = "1.1.2"
+cfg-if = "1"
+rhai-sdk-common-utils = { path = "../rhai-sdk-common-utils", version = "*" }
+rhai = { version = "1", features = ["serde"] }
+rstest = "0.18.2"
+cap-std = "3.4.2"
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
+rex-logger = { path = "../../core/rex-logger", version = "*" }
+derive_builder = "0.20.2"
+handlebars = "6.3.1"
+serde_json = "1.0"
+strum = "0.27.1"
+strum_macros = "0.27.1"
+tar = "0.4"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rust-system-info = { path = "../../rust-sdk/safe-system-info", version = "*" }
+rust-disk-info = { path = "../../rust-sdk/safe-disk-info", version = "*" }
+rust-network = { path = "../../rust-sdk/safe-network", version = "*" }
+caps = "0.5"
+rust-safe-process-mgmt = { path = "../../rust-sdk/safe-process-mgmt", version = "*" }
+rustix = { version = "1.0", features = ["process"] }
+
+[dev-dependencies]
+rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+rhai-sdk-common-utils = { path = "../rhai-sdk-common-utils", version = "*" }
+rhai = { version = "1", features = ["metadata"] }
+
+[build-dependencies]
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*", features = [
+    "build-validation",
+] }
