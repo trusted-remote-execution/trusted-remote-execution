@@ -1,0 +1,1 @@
+let file = open_file("example.txt"); 

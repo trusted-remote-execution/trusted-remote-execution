@@ -1,0 +1,25 @@
+Cargo.lock
+
+target/
+
+# Don't check in the local rustup toolchain override.
+/rust-toolchain.toml
+
+# don't check in local env config
+.cargo/
+
+# .attach_pid{n} pop up frequently
+# if you have older (<17) JDK versions in your dependency closure
+# and generally should not be commited to git
+# ref: https://bugs.openjdk.java.net/browse/JDK-8214300
+.attach_*
+
+# Don't include Intellij generated project files
+*.iml
+
+# Temp test directories
+.tmp*/
+
+# Python virtual environments
+.venv/
+__pycache__/

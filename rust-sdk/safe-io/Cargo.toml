@@ -1,0 +1,67 @@
+[package]
+name = "rust-safe-io"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+rust-sdk-common-utils = { version = "*", path = "../sdk-common-utils" }
+rex-redaction = { version = "*", path = "../../core/rex-redaction", features = [
+    "redaction-converter",
+] }
+anyhow = { version = "1.0", default-features = false }
+bytesize = "2"
+cap-fs-ext = "3.4"
+cap-tempfile = "3.4"
+cap-std = "3.4"
+cap-primitives = "3.4"
+derive_builder = "0.20"
+derive-getters = "0.5"
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
+rex-logger = { path = "../../core/rex-logger", version = "*" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1.0", default-features = false }
+sysinfo = { version = "0.35", default-features = false, features = ["user"] }
+regex = { version = "1.11", default-features = false, features = ["std"] }
+rustix = "1.0"
+fs-set-times = "0.20"
+thiserror = "2.0"
+tar = { version = "0.4", default-features = false }
+flate2 = "1"
+glob = "0.3"
+cfg-if = "1"
+nix = { version = "0.30", features = [
+    "process",
+    "fs",
+    "user",
+    "sched",
+    "signal",
+], default-features = false }
+goblin = { version = "0.10", features = ["std"] }
+scroll = "0.13"
+memmap2 = "0.9"
+rustls = { version = "0.23", default-features = false, features = [
+    "aws_lc_rs",
+    "std",
+] }
+rustls-pki-types = "1.9"
+webpki = { package = "rustls-webpki", version = "0.103", default-features = false, features = [
+    "aws-lc-rs",
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+caps = "0.5"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*", features = [
+    "test-utils",
+] }
+assertables = "9.5.2"
+assert_fs = "1.1.2"
+rstest = "0.25.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"

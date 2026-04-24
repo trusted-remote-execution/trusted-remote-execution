@@ -1,0 +1,30 @@
+[workspace]
+members = [
+    "core/rex-policy-schema",
+    "core/rex-logger",
+    "core/rex-test-utils",
+    "core/rex-metrics",
+    "core/rex-cedar-auth",
+    "core/rex-registrar-utils",
+    "core/rex-redaction",
+    "core/rex-runner-registrar",
+    "core/rex-runner",
+    "core/rex-sdk-registry",
+    "rust-sdk/safe-disk-info",
+    "rust-sdk/safe-io",
+    "rust-sdk/safe-network",
+    "rust-sdk/safe-process-mgmt",
+    "rust-sdk/safe-system-info",
+    "rust-sdk/sdk-common-utils",
+    "rhai-sdk/rhai-safe-disk-info",
+    "rhai-sdk/rhai-safe-io",
+    "rhai-sdk/rhai-safe-network",
+    "rhai-sdk/rhai-safe-process-mgmt",
+    "rhai-sdk/rhai-safe-system-info",
+    "rhai-sdk/rhai-sdk-common-utils",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"

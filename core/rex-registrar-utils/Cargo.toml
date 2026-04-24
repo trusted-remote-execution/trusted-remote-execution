@@ -1,0 +1,16 @@
+[package]
+name = "rex-runner-registrar-utils"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[features]
+# Feature flag for build-time validation utilities
+# Only include regex when this feature is enabled
+build-validation = ["regex"]
+
+[dependencies]
+derive_builder = "0.20"
+
+# Build-time dependencies (only when build-validation feature is enabled)
+regex = { version = "1", optional = true }

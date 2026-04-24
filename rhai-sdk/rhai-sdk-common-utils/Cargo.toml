@@ -1,0 +1,28 @@
+[package]
+name = "rhai-sdk-common-utils"
+version.workspace = true
+edition.workspace = true
+
+publish = false
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*" }
+rust-sdk-common-utils = { version = "*", path = "../../rust-sdk/sdk-common-utils" }
+assert_fs = "1"
+rhai = "1"
+rstest = "0.26"
+rex-logger = { path = "../../core/rex-logger", version = "*" }
+strum = "0.27"
+strum_macros = "0.27"
+
+[dev-dependencies]
+rhai = { version = "1", features = ["metadata"] }
+rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+
+[build-dependencies]
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*", features = [
+    "build-validation",
+] }

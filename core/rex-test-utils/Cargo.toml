@@ -1,0 +1,37 @@
+[package]
+name = "rex-test-utils"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+anyhow = "1.0.18"
+assert_fs = "1.1.2"
+assertables = "9.5.2"
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "*", features = [
+    "test-utils",
+] }
+flate2 = "1"
+httpmock = "0.8"
+rex-policy-schema = { path = "../rex-policy-schema", version = "*" }
+rand = "0.9"
+reqwest = { version = "0.12", features = [
+    "blocking",
+    "rustls-tls",
+], default-features = false }
+rhai = { version = "1", features = ["metadata"] }
+rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "*" }
+rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "*" }
+rhai-safe-network = { path = "../../rhai-sdk/rhai-safe-network", version = "*" }
+rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "*" }
+rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "*" }
+rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "*" }
+serde_json = "1.0.140"
+tar = "0.4"
+whoami = "1.5.2"
+
+[dev-dependencies]
+rstest = "0.26"

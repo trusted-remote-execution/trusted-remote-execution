@@ -1,0 +1,12 @@
+[graph]
+exclude-dev = true
+
+[bans]
+deny = [
+    { crate = "test-utils", reason = "test utils can only be used in dev deps" },
+]
+
+# allow multiple versions for now.
+# This shows findings for multiple
+# versions of the same package pulled in as a dependency.
+multiple-versions = "allow"

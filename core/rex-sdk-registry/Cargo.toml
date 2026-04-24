@@ -1,0 +1,21 @@
+[package]
+name = "rex-sdk-registry"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+rhai = "1"
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "*" }
+rex-runner-registrar-utils = { path = "../rex-registrar-utils", version = "*" }
+rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "*" }
+rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "*" }
+rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "*" }
+rhai-safe-network = { path = "../../rhai-sdk/rhai-safe-network", version = "*" }
+rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "*" }
+rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "*" }
+
+[dev-dependencies]
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "*", features = [
+    "test-utils",
+] }

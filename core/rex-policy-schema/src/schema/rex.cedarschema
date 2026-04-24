@@ -1,0 +1,170 @@
+entity User;
+
+namespace file_system { 
+
+    entity Dir in Dir {
+        path: String
+    };
+
+    entity File in Dir {
+        path: String
+    };
+
+    entity Arguments {
+        keys: Set<String>,
+        flags: Set<String>,
+        positional_values: Set<String>
+    } tags String;
+
+    entity Environment {
+        names: Set<String>
+    } tags String;
+
+    action SafeIO;
+
+    action write, network_namespace in SafeIO appliesTo {
+        principal: [User],
+        resource: [File]
+    };
+    action redacted_read in SafeIO appliesTo {
+        principal: [User],
+        resource: [File]
+    };
+    action open, chmod, chown, create, delete, read, stat in SafeIO appliesTo {
+        principal: [User],
+        resource: [File, Dir]
+    };
+
+    action set_x_attr in SafeIO appliesTo {
+        principal: [User],
+        resource: [File, Dir],
+        context: {
+            xattr: {
+                name: String
+            }
+        }
+    };
+
+    action execute in SafeIO appliesTo {
+        principal: [User],
+        resource: [File],
+        context: {
+            arguments: Arguments,
+            environment: Environment,
+            user: {
+                username: String,
+                uid: Long
+            },
+            group: {
+                groupname: String,
+                gid: Long
+            },
+            namespace?: {
+                target_process_id: Long
+            }
+        }
+    };
+
+    action move in SafeIO appliesTo {
+        principal: [User],
+        resource: [File, Dir],
+        context: {
+            destination: {
+                path: String,
+                name: String,
+                parent_path: String
+            },
+        }
+    };
+
+    action unmount in SafeIO appliesTo {
+        principal: [User],
+        resource: [Dir]
+    };
+}
+
+namespace sysinfo {
+    action SysinfoAction;
+
+    entity Uname {
+    };
+
+    entity Sysinfo {
+    };
+    
+    action list in SysinfoAction appliesTo {
+        principal: [User],
+        resource: [Uname, Sysinfo]
+    };
+
+    entity Hostname {
+        hostname: String
+    };
+
+    action resolve_hostname in SysinfoAction appliesTo {
+        principal: [User],
+        resource: [Hostname]
+    };
+}
+
+namespace network {
+    action NetworkAction;
+
+    entity url {
+        url: String
+    };
+
+    action GET, connect in NetworkAction appliesTo {
+        principal: [User],
+        resource: [url]
+    };
+}
+
+namespace process_system {
+    entity Process {
+        name: String,
+        username: String,
+        command: String
+    };
+
+    action ProcessAction;
+    
+    action list, list_fds, mount_namespace, network_namespace, kill, interrupt, trace in ProcessAction appliesTo {
+        principal: [User],
+        resource: [Process]
+    };
+}
+
+namespace systemd {
+    entity Service {
+        name: String
+    };
+
+    entity Systemd;
+
+    action SystemdAction;
+
+    action start, stop, restart, status in SystemdAction appliesTo {
+        principal: [User],
+        resource: [Service]
+    };
+
+    action daemon_reload in SystemdAction appliesTo {
+        principal: [User],
+        resource: [Systemd]
+    };
+}
+
+namespace sysctl {
+    entity Sysctl {
+    };
+
+    action SysctlAction;
+
+    action load in SysctlAction appliesTo {
+        principal: [User],
+        resource: [Sysctl]
+    };
+}
+
+

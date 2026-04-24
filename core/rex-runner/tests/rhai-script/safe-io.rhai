@@ -1,0 +1,1 @@
+info(`${file_name}`);

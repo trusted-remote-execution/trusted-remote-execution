@@ -1,0 +1,42 @@
+[package]
+name = "rust-system-info"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+sysinfo = { version = "0.35" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
+rust-sdk-common-utils = { version = "*", path = "../sdk-common-utils" }
+rust-safe-io = { path = "../safe-io", version = "*" }
+derive_builder = "0.20"
+derive-getters = "0.5"
+anyhow = "1"
+cedar-policy = "4"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+cfg-if = "1"
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+hickory-resolver = { version = "0.25", default-features = false, features = [
+    "tokio",
+    "system-config",
+] }
+hickory-proto = { version = "0.25", default-features = false }
+tokio = { version = "1", features = ["rt"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+procfs = { version = "0.17", default-features = false }
+caps = "0.5"
+nix = { version = "0.30", features = ["process"] }
+rmesg = "1.0"
+rustix = "0.38"
+
+[dev-dependencies]
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*", features = [
+    "test-utils",
+] }
+rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+env_logger = "0.11"
+rstest = "0.18"

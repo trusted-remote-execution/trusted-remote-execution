@@ -1,0 +1,9 @@
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        mod linux;
+    } else if #[cfg(target_os = "macos")] {
+        mod macos;
+    }
+}
