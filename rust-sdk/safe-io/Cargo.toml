@@ -2,11 +2,13 @@
 name = "rust-safe-io"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Safe filesystem I/O SDK for REX with Cedar authorization"
 
 [dependencies]
-rust-sdk-common-utils = { version = "*", path = "../sdk-common-utils" }
-rex-redaction = { version = "*", path = "../../core/rex-redaction", features = [
+rust-sdk-common-utils = { version = "0.1.0", path = "../sdk-common-utils" }
+rex-redaction = { version = "0.1.0", path = "../../core/rex-redaction", features = [
     "redaction-converter",
 ] }
 anyhow = { version = "1.0", default-features = false }
@@ -17,8 +19,8 @@ cap-std = "3.4"
 cap-primitives = "3.4"
 derive_builder = "0.20"
 derive-getters = "0.5"
-rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
-rex-logger = { path = "../../core/rex-logger", version = "*" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
+rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
 sysinfo = { version = "0.35", default-features = false, features = ["user"] }
@@ -56,8 +58,8 @@ caps = "0.5"
 libc = "0.2"
 
 [dev-dependencies]
-rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
-rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*", features = [
+rex-test-utils = { path = "../../core/rex-test-utils", version = "0.1.0" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0", features = [
     "test-utils",
 ] }
 assertables = "9.5.2"

@@ -2,21 +2,23 @@
 name = "rex-runner-registrar"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Rhai script engine registrar for REX runner with Cedar-based authorization"
 
 [dependencies]
-rex-cedar-auth = { path = "../rex-cedar-auth", version = "*" }
-rex-runner-registrar-utils = { path = "../rex-registrar-utils", version = "*" }
-rust-sdk-common-utils = { path = "../../rust-sdk/sdk-common-utils", version = "*" }
-rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "*" }
-rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "*" }
-rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "*" }
-rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "*" }
-rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "*" }
-rex-sdk-registry = { path = "../rex-sdk-registry", version = "*" }
-rex-policy-schema = { path = "../rex-policy-schema", version = "*" }
-rex-metrics-and-alarms = { path = "../rex-metrics", version = "*" }
-rex-logger = { path = "../rex-logger", version = "*" }
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "0.1.0" }
+rex-runner-registrar-utils = { path = "../rex-registrar-utils", version = "0.1.0" }
+rust-sdk-common-utils = { path = "../../rust-sdk/sdk-common-utils", version = "0.1.0" }
+rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "0.1.0" }
+rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "0.1.0" }
+rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "0.1.0" }
+rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "0.1.0" }
+rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "0.1.0" }
+rex-sdk-registry = { path = "../rex-sdk-registry", version = "0.1.0" }
+rex-policy-schema = { path = "../rex-policy-schema", version = "0.1.0" }
+rex-metrics-and-alarms = { path = "../rex-metrics", version = "0.1.0" }
+rex-logger = { path = "../rex-logger", version = "0.1.0" }
 rhai = { version = "1.20", default-features = false, features = ["std"] }
 derive_builder = { version = "0.20", default-features = false }
 sysinfo = { version = "0.35", default-features = false, features = ["system"] }
@@ -24,10 +26,10 @@ anyhow = { version = "1.0", default-features = false }
 strum = { version = "0.25", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
-rex-cedar-auth = { path = "../rex-cedar-auth", version = "*", features = [
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "0.1.0", features = [
     "test-utils",
 ] }
-rex-test-utils = { path = "../rex-test-utils", version = "*" }
+rex-test-utils = { path = "../rex-test-utils", version = "0.1.0" }
 assertables = "9.5.0"
 assert_fs = "1.1.2"
 rstest = "0.18.2"

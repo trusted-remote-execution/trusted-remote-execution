@@ -3,7 +3,7 @@ exclude-dev = true
 
 [bans]
 deny = [
-    { crate = "test-utils", reason = "test utils can only be used in dev deps" },
+    { crate = "rex-test-utils", reason = "test utils can only be used in dev deps" },
 ]
 
 # allow multiple versions for now.

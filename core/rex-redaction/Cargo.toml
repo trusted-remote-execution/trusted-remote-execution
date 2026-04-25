@@ -2,8 +2,9 @@
 name = "rex-redaction"
 version.workspace = true
 edition.workspace = true
-
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Sensitive data redaction utilities for REX"
 
 [features]
 redaction-converter = []
