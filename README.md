@@ -130,7 +130,7 @@ Rhai bindings that expose the Rust SDK to scripts:
 
 ## Building
 
-To build, simply run `cargo build` (or `cargo build --release`).
+To build, simply run `cargo build --workspace` (or `cargo build --workspace --release`).
 
 ## Testing
 
