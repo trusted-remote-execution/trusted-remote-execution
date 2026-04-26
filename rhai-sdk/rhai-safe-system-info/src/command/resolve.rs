@@ -13,7 +13,7 @@ use rhai::Array;
 #[cfg(target_os = "linux")]
 pub(crate) fn resolve(hostname: &str, cedar_auth: &CedarAuth) -> Result<Array, String> {
     use rhai::Dynamic;
-    use rust_system_info::{ResolveConfigBuilder, SystemInfo};
+    use rust_safe_system_info::{ResolveConfigBuilder, SystemInfo};
 
     let sysinfo = SystemInfo::new().map_err(|e| e.to_string())?;
     let config = ResolveConfigBuilder::default()

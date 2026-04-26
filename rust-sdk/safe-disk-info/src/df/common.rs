@@ -103,7 +103,7 @@ impl Filesystem {
     /// # Examples
     ///
     /// ```no_run
-    /// # use rust_disk_info::{Filesystem, Unit};
+    /// # use rust_safe_disk_info::{Filesystem, Unit};
     /// # let filesystem = Filesystem::new(
     /// #     "test".to_string(), "ext4".to_string(), 1000, 250, 750, 25.0,
     /// #     5000, 15000, 25.0, "/test".to_string(), 3000, 2, 20480000,

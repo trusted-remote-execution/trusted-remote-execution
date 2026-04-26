@@ -110,7 +110,7 @@ fn test_dmesg_registry_completeness() {
         return;
     }
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_system_info::DmesgEntry;
+    use rust_safe_system_info::DmesgEntry;
 
     let engine = create_test_engine_and_register();
     let entries: Array = engine.eval("dmesg()").unwrap();

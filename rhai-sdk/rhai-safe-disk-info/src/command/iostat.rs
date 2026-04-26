@@ -15,7 +15,7 @@ use rhai::Dynamic;
 /// Returns I/O statistics as an `IoStatSnapshot` struct.
 #[cfg(target_os = "linux")]
 pub(crate) fn iostat(cedar_auth: &CedarAuth) -> Result<Dynamic, String> {
-    use rust_disk_info::{FilesystemOptionsBuilder, Filesystems};
+    use rust_safe_disk_info::{FilesystemOptionsBuilder, Filesystems};
 
     let fs_opts = FilesystemOptionsBuilder::default()
         .build()

@@ -27,7 +27,7 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_system_info::RustSysteminfoError;
+/// use rust_safe_system_info::RustSysteminfoError;
 /// use std::path::PathBuf;
 ///
 /// let error = RustSysteminfoError::PermissionDenied {

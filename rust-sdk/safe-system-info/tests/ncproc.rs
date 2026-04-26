@@ -3,7 +3,7 @@ use rex_cedar_auth::test_utils::{
     DEFAULT_TEST_CEDAR_AUTH, TestCedarAuthBuilder, get_test_rex_principal,
 };
 use rex_test_utils::assertions::assert_error_contains;
-use rust_system_info::{SystemInfo, open_proc_fd};
+use rust_safe_system_info::{SystemInfo, open_proc_fd};
 
 /// Given: A SystemInfo object
 /// When: The cpu_count method is called and the user is unauthorized

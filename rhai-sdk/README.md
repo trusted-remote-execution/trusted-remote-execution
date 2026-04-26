@@ -7,10 +7,10 @@ The Rhai SDK provides [Rhai](https://rhai.rs/) language bindings for the [Rust S
 | Crate | Rust SDK counterpart | Description | Platform |
 |-------|---------------------|-------------|----------|
 | `rhai-safe-io` | `rust-safe-io` | File and directory operations, gzip, tar, glob search, subprocess execution, ELF inspection, and core dump analysis | Linux, macOS |
-| `rhai-safe-network` | `rust-network` | HTTP client, raw TCP connections, DNS resolution, and socket enumeration | Linux, macOS |
+| `rhai-safe-network` | `rust-safe-network` | HTTP client, raw TCP connections, DNS resolution, and socket enumeration | Linux, macOS |
 | `rhai-safe-process-mgmt` | `rust-safe-process-mgmt` | Process listing, signal delivery, `systemctl` control, `lsof`/`fuser` queries | **Linux only** |
-| `rhai-safe-system-info` | `rust-system-info` | Memory, swap, CPU, `dmesg`, `sysctl`, `uname`, and DNS resolver info | Linux, macOS |
-| `rhai-safe-disk-info` | `rust-disk-info` | Filesystem statistics and I/O counters | Linux, macOS |
+| `rhai-safe-system-info` | `rust-safe-system-info` | Memory, swap, CPU, `dmesg`, `sysctl`, `uname`, and DNS resolver info | Linux, macOS |
+| `rhai-safe-disk-info` | `rust-safe-disk-info` | Filesystem statistics and I/O counters | Linux, macOS |
 | `rhai-sdk-common-utils` | `rust-sdk-common-utils` | `DateTime`, duration, random utilities, and shared error types | Linux, macOS |
 
 ## Testing

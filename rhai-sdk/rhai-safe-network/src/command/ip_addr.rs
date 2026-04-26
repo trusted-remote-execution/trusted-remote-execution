@@ -16,7 +16,7 @@ use rhai::Array;
 pub(crate) fn ip_addr(cedar_auth: &CedarAuth) -> Result<Array, String> {
     use rhai::Dynamic;
 
-    let networks = rust_network::network::ip_addresses(cedar_auth).map_err(|e| e.to_string())?;
+    let networks = rust_safe_network::network::ip_addresses(cedar_auth).map_err(|e| e.to_string())?;
 
     Ok(networks.into_iter().map(Dynamic::from).collect())
 }

@@ -13,7 +13,7 @@ use rhai::Dynamic;
 /// Performs an HTTP GET request and returns a `Response` struct.
 #[cfg(target_os = "linux")]
 pub(crate) fn curl(url: &str, cedar_auth: &CedarAuth) -> Result<Dynamic, String> {
-    use rust_network::client::Client;
+    use rust_safe_network::client::Client;
 
     let mut client = Client::new();
     let mut request = client.get(url.to_string());

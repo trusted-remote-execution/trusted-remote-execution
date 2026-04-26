@@ -10,7 +10,7 @@ use rex_runner_registrar_utils::{
 };
 use rhai::serde::to_dynamic;
 use rhai::{Array, Dynamic, EvalAltResult};
-use rust_network::{
+use rust_safe_network::{
     Client, Connection, Network, Request, Response,
     netstat::{
         InternetConnection, NetworkProtocol, NetworkStats, ProcessInfo, TcpState, UnixProtocol,
@@ -18,7 +18,7 @@ use rust_network::{
     },
     network::{connect, ip_addresses},
 };
-use rust_system_info::TransportProtocol;
+use rust_safe_system_info::TransportProtocol;
 use std::net::SocketAddr;
 use std::rc::Rc;
 

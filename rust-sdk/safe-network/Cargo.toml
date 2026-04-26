@@ -1,5 +1,5 @@
 [package]
-name = "rust-network"
+name = "rust-safe-network"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,7 @@ description = "Safe network operations SDK for REX with Cedar authorization"
 rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
 rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 rust-sdk-common-utils = { version = "0.1.0", path = "../sdk-common-utils" }
-rust-system-info = { version = "0.1.0", path = "../safe-system-info" }
+rust-safe-system-info = { version = "0.1.0", path = "../safe-system-info" }
 anyhow = "1"
 cedar-policy = "4"
 derive-getters = "0.5"

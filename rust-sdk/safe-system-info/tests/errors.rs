@@ -1,6 +1,6 @@
 //! Comprehensive tests for RustSysteminfoError to achieve 100% branch coverage
 use anyhow::Error as AnyhowError;
-use rust_system_info::RustSysteminfoError;
+use rust_safe_system_info::RustSysteminfoError;
 
 /// Test creating each RustSysteminfoError variant
 mod construction_tests {

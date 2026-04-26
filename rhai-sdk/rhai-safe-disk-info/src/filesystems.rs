@@ -16,15 +16,15 @@ use anyhow::Result;
 use rhai::Array;
 use rhai::EvalAltResult;
 #[cfg(target_os = "linux")]
-use rust_disk_info::UnmountOptions;
-use rust_disk_info::{FilesystemOptions, IoStatSnapshot};
+use rust_safe_disk_info::UnmountOptions;
+use rust_safe_disk_info::{FilesystemOptions, IoStatSnapshot};
 
 /// Query mounted filesystems, disk usage, and I/O statistics.
 #[derive(Clone, Debug, Copy)]
 pub struct Filesystems;
 
 impl Filesystems {
-    /// Creates a new [`rust_disk_info::Filesystems`] instance
+    /// Creates a new [`rust_safe_disk_info::Filesystems`] instance
     ///
     /// # Example
     ///

@@ -1,5 +1,5 @@
 [package]
-name = "rust-disk-info"
+name = "rust-safe-disk-info"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

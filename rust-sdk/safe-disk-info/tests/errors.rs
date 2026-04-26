@@ -1,6 +1,6 @@
 //! Comprehensive tests for RustDiskinfoError to achieve 100% branch coverage
 use anyhow::Error as AnyhowError;
-use rust_disk_info::RustDiskinfoError;
+use rust_safe_disk_info::RustDiskinfoError;
 use std::error::Error as SourceError;
 use std::path::PathBuf;
 

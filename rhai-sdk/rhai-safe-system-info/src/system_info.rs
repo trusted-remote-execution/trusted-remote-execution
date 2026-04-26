@@ -15,18 +15,18 @@ use procfs::KernelStats;
 use rhai::Array;
 use rhai::EvalAltResult;
 #[cfg(target_os = "linux")]
-use rust_system_info::SlabInfo;
-use rust_system_info::options::ResolveConfig;
+use rust_safe_system_info::SlabInfo;
+use rust_safe_system_info::options::ResolveConfig;
 #[cfg(target_os = "linux")]
-use rust_system_info::{DmesgOptions, UnameInfo};
-use rust_system_info::{Meminfo, Swapinfo};
+use rust_safe_system_info::{DmesgOptions, UnameInfo};
+use rust_safe_system_info::{Meminfo, Swapinfo};
 
 /// Query system information: memory, CPU, kernel, and DNS.
 #[derive(Clone, Debug, Copy)]
 pub struct SystemInfo;
 
 impl SystemInfo {
-    /// Creates a new [`rust_system_info::SystemInfo`] instance
+    /// Creates a new [`rust_safe_system_info::SystemInfo`] instance
     ///
     /// # Example
     ///

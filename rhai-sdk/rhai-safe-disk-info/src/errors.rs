@@ -5,7 +5,7 @@
 //! their basic categories for use in Rhai scripts.
 
 use rhai::{Dynamic, EvalAltResult, Position};
-use rust_disk_info::errors::RustDiskinfoError;
+use rust_safe_disk_info::errors::RustDiskinfoError;
 use strum_macros::{AsRefStr, Display, EnumString};
 
 pub(crate) const ERROR_MODULE_NAME: &str = "DiskinfoErrorKind";

@@ -108,12 +108,12 @@ Safe Rust implementations of system operations, each with Cedar authorization:
 
 | Crate | Description |
 |-------|-------------|
-| `rust-sdk/safe-io` | File and directory operations (read, write, copy, move, search, chmod, gzip, etc.) |
-| `rust-sdk/safe-network` | Networking operations (netstat, hostname, nc, nslookup, dig, curl, openssl) |
-| `rust-sdk/safe-process-mgmt` | Process listing, signals, systemctl, and namespace operations |
-| `rust-sdk/safe-system-info` | Memory, swap, CPU, hostname, dmesg, sysctl, and slab info |
-| `rust-sdk/safe-disk-info` | Filesystem stats (df), iostat, and unmount |
-| `rust-sdk/sdk-common-utils` | Shared types (DateTime), signal handling, and Cedar auth helpers |
+| `rust-safe-io` | File and directory operations (read, write, copy, move, search, chmod, gzip, etc.) |
+| `rust-safe-network` | Networking operations (netstat, hostname, nc, nslookup, dig, curl, openssl) |
+| `rust-safe-process-mgmt` | Process listing, signals, systemctl, and namespace operations |
+| `rust-safe-system-info` | Memory, swap, CPU, hostname, dmesg, sysctl, and slab info |
+| `rust-safe-disk-info` | Filesystem stats (df), iostat, and unmount |
+| `rust-sdk-common-utils` | Shared types (DateTime), signal handling, and Cedar auth helpers |
 
 ### Rhai SDK
 
@@ -121,12 +121,12 @@ Rhai bindings that expose the Rust SDK to scripts:
 
 | Crate | Description |
 |-------|-------------|
-| `rhai-sdk/rhai-safe-io` | Rhai bindings for file/directory/gzip/archive/execute operations |
-| `rhai-sdk/rhai-safe-network` | Rhai bindings for HTTP and DNS |
-| `rhai-sdk/rhai-safe-process-mgmt` | Rhai bindings for process and systemctl operations |
-| `rhai-sdk/rhai-safe-system-info` | Rhai bindings for system info, sysctl, and disk info |
-| `rhai-sdk/rhai-safe-disk-info` | Rhai bindings for filesystem and iostat queries |
-| `rhai-sdk/rhai-sdk-common-utils` | Rhai bindings for DateTime, random, and error utilities |
+| `rhai-safe-io` | Rhai bindings for file/directory/gzip/archive/execute operations |
+| `rhai-safe-network` | Rhai bindings for HTTP and DNS |
+| `rhai-safe-process-mgmt` | Rhai bindings for process and systemctl operations |
+| `rhai-safe-system-info` | Rhai bindings for system info, sysctl, and disk info |
+| `rhai-safe-disk-info` | Rhai bindings for filesystem and iostat queries |
+| `rhai-sdk-common-utils` | Rhai bindings for DateTime, random, and error utilities |
 
 ## Building
 
@@ -135,7 +135,7 @@ To build, simply run `cargo build` (or `cargo build --release`).
 ## Testing
 
 ```sh
-cargo test
+cargo test --workspace
 ```
 
 ## Documentation

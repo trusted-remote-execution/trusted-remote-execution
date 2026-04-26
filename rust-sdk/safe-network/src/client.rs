@@ -24,7 +24,7 @@ use serde::Serialize;
 /// # Example
 ///
 /// ```no_run
-/// use rust_network::client::Client;
+/// use rust_safe_network::client::Client;
 ///
 /// let mut client = Client::new();
 /// let request = client.get("https://api.example.com".to_string());
@@ -80,7 +80,7 @@ impl Client {
     /// # Example
     ///
     /// ```no_run
-    /// use rust_network::client::Client;
+    /// use rust_safe_network::client::Client;
     ///
     /// let client = Client::new();
     /// ```
@@ -99,7 +99,7 @@ impl Client {
     /// # Example
     ///
     /// ```no_run
-    /// use rust_network::client::Client;
+    /// use rust_safe_network::client::Client;
     ///
     /// let client = Client::new().max_text_bytes(1024); // Max 1KB response
     /// ```

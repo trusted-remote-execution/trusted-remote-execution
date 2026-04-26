@@ -106,7 +106,7 @@ fn test_free_meminfo_registry_completeness() {
 #[test]
 fn test_free_swapinfo_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_system_info::Swapinfo;
+    use rust_safe_system_info::Swapinfo;
 
     let engine = create_test_engine_and_register();
     let swap: Swapinfo = engine.eval("free().swap").unwrap();

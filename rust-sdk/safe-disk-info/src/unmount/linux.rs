@@ -20,7 +20,7 @@ use crate::options::UnmountOptions;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_disk_info::{unmount, UnmountOptionsBuilder};
+/// use rust_safe_disk_info::{unmount, UnmountOptionsBuilder};
 /// # use rex_cedar_auth::cedar_auth::CedarAuth;
 /// # use rex_cedar_auth::test_utils::{get_default_test_rex_policy, get_default_test_rex_schema};
 /// #

@@ -14,7 +14,7 @@ use rhai::Map;
 #[cfg(target_os = "linux")]
 pub(crate) fn free(cedar_auth: &CedarAuth) -> Result<Map, String> {
     use rhai::Dynamic;
-    use rust_system_info::SystemInfo;
+    use rust_safe_system_info::SystemInfo;
 
     let mut sysinfo = SystemInfo::new().map_err(|e| e.to_string())?;
     let mem = sysinfo.memory_info(cedar_auth).map_err(|e| e.to_string())?;

@@ -1,5 +1,5 @@
 [package]
-name = "rust-system-info"
+name = "rust-safe-system-info"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

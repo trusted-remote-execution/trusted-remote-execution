@@ -14,7 +14,7 @@ use derive_builder::Builder;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_disk_info::options::FilesystemOptionsBuilder;
+/// use rust_safe_disk_info::options::FilesystemOptionsBuilder;
 ///
 /// // Get all filesystems
 /// let fs_opts = FilesystemOptionsBuilder::default()
@@ -57,7 +57,7 @@ pub struct FilesystemOptions {
 /// # Examples
 ///
 /// ```no_run
-/// use rust_disk_info::UnmountOptionsBuilder;
+/// use rust_safe_disk_info::UnmountOptionsBuilder;
 /// # use rex_cedar_auth::cedar_auth::CedarAuth;
 /// # use rex_cedar_auth::test_utils::{get_default_test_rex_policy, get_default_test_rex_schema};
 /// #
@@ -72,7 +72,7 @@ pub struct FilesystemOptions {
 ///     .build()
 ///     .unwrap();
 ///
-/// rust_disk_info::unmount(&cedar_auth, options).unwrap();
+/// rust_safe_disk_info::unmount(&cedar_auth, options).unwrap();
 /// ```
 #[derive(Builder, Debug, Clone)]
 #[builder(derive(Debug))]

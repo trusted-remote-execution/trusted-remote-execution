@@ -62,7 +62,7 @@ fn test_curl_unauthorized() {
 #[ignore] // Requires network access
 fn test_curl_response_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_network::Response;
+    use rust_safe_network::Response;
 
     let engine = create_test_engine_and_register();
     let resp: Response = engine.eval(r#"curl("https://example.com")"#).unwrap();

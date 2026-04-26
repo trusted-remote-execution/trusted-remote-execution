@@ -2,7 +2,7 @@
 use rex_cedar_auth::sysinfo::actions::SysinfoAction;
 use rex_cedar_auth::test_utils::get_test_rex_principal;
 use rex_test_utils::assertions::assert_error_contains;
-use rust_system_info::UnameInfo;
+use rust_safe_system_info::UnameInfo;
 
 mod common;
 use common::create_test_engine_and_register_with_policy;

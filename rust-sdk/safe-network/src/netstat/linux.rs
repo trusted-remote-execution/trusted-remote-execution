@@ -24,7 +24,7 @@ const PROC_UNIX: &str = "/proc/net/unix";
 /// /// # Examples
 ///
 /// ```no_run
-/// # use rust_network::netstat;
+/// # use rust_safe_network::netstat;
 /// # use rex_cedar_auth::cedar_auth::CedarAuth;
 /// # use rex_cedar_auth::test_utils::{get_default_test_rex_policy, get_default_test_rex_schema};
 /// #

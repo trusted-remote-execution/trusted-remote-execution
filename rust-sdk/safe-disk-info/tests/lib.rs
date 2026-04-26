@@ -4,12 +4,12 @@ use rex_cedar_auth::test_utils::{
     DEFAULT_TEST_CEDAR_AUTH, TestCedarAuthBuilder, get_test_rex_principal,
 };
 use rex_test_utils::assertions::assert_error_contains;
-use rust_disk_info::Unit;
+use rust_safe_disk_info::Unit;
 
-use rust_disk_info::{Filesystem, FilesystemOptionsBuilder, Filesystems};
+use rust_safe_disk_info::{Filesystem, FilesystemOptionsBuilder, Filesystems};
 
 #[cfg(target_os = "linux")]
-use rust_disk_info::{UnmountOptionsBuilder, unmount};
+use rust_safe_disk_info::{UnmountOptionsBuilder, unmount};
 
 use anyhow::Result;
 

@@ -25,7 +25,7 @@ impl Filesystems {
     /// # Example
     ///
     /// ```no_run
-    /// # use rust_disk_info::{FilesystemOptionsBuilder, Filesystems};
+    /// # use rust_safe_disk_info::{FilesystemOptionsBuilder, Filesystems};
     /// # use rex_cedar_auth::test_utils::{get_default_test_rex_schema, get_test_rex_principal};
     /// # use rex_cedar_auth::cedar_auth::CedarAuth;
     /// #
@@ -58,7 +58,7 @@ impl Filesystems {
     /// # Example
     ///
     /// ```no_run
-    /// # use rust_disk_info::{FilesystemOptionsBuilder, Filesystems};
+    /// # use rust_safe_disk_info::{FilesystemOptionsBuilder, Filesystems};
     /// # use rex_cedar_auth::test_utils::{get_default_test_rex_schema, get_test_rex_principal};
     /// # use rex_cedar_auth::cedar_auth::CedarAuth;
     /// #

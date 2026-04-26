@@ -2,7 +2,7 @@
 use rex_cedar_auth::fs::actions::FilesystemAction;
 use rex_cedar_auth::test_utils::{TestCedarAuthBuilder, get_test_rex_principal};
 use rex_test_utils::assertions::assert_error_contains;
-use rust_system_info::{SystemInfo, options::DmesgOptionsBuilder};
+use rust_safe_system_info::{SystemInfo, options::DmesgOptionsBuilder};
 
 mod dmesg_tests {
     use super::*;

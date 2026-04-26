@@ -1,7 +1,7 @@
 use rex_cedar_auth::test_utils::{DEFAULT_TEST_CEDAR_AUTH, get_test_rex_principal};
 use rex_test_utils::assertions::assert_error_contains;
 use rex_test_utils::rhai::common::create_test_engine_and_register;
-use rust_system_info::open_proc_fd;
+use rust_safe_system_info::open_proc_fd;
 
 mod common;
 use common::create_test_engine_and_register_with_policy;

@@ -4,7 +4,7 @@ use rex_test_utils::assertions::assert_error_contains;
 use rex_test_utils::io::is_container;
 use rex_test_utils::network::parse_nslookup_output;
 use rstest::rstest;
-use rust_system_info::{ResolveConfigBuilder, SystemInfo, TransportProtocol};
+use rust_safe_system_info::{ResolveConfigBuilder, SystemInfo, TransportProtocol};
 use std::process::Command;
 
 /// Given: A hostname that resolves to multiple IP addresses

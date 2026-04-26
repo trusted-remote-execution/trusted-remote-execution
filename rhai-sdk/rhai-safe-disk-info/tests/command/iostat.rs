@@ -108,7 +108,7 @@ fn test_iostat_unauthorized() {
 #[test]
 fn test_iostat_cpu_stats_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_disk_info::iostat::CpuStats;
+    use rust_safe_disk_info::iostat::CpuStats;
 
     let engine = create_test_engine_and_register();
     let snapshot: Dynamic = engine.eval("iostat()").unwrap();
@@ -124,7 +124,7 @@ fn test_iostat_cpu_stats_registry_completeness() {
 #[test]
 fn test_iostat_device_stats_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_disk_info::iostat::DeviceStats;
+    use rust_safe_disk_info::iostat::DeviceStats;
 
     let engine = create_test_engine_and_register();
     let devices: rhai::Array = engine.eval("iostat().device_stats").unwrap();

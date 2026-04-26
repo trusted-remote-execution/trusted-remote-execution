@@ -12,7 +12,7 @@ unsafe_code = "forbid"
 [dependencies]
 rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0" }
 rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
-rust-disk-info = { path = "../../rust-sdk/safe-disk-info", version = "0.1.0" }
+rust-safe-disk-info = { path = "../../rust-sdk/safe-disk-info", version = "0.1.0" }
 rust-safe-io = { path = "../../rust-sdk/safe-io", version = "0.1.0" }
 rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 anyhow = "1"

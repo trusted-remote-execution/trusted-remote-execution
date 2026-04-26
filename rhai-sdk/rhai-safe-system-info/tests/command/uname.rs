@@ -114,7 +114,7 @@ fn test_uname_unauthorized() {
 #[test]
 fn test_uname_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_system_info::UnameInfo;
+    use rust_safe_system_info::UnameInfo;
 
     let engine = create_test_engine_and_register();
     let info: UnameInfo = engine.eval::<Dynamic>("uname()").unwrap().cast();

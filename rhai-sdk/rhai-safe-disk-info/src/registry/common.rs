@@ -9,7 +9,7 @@ use rex_runner_registrar_utils::{
 use rhai::serde::to_dynamic;
 use rhai::{Array, EvalAltResult};
 
-use rust_disk_info::{CpuStats, DeviceStats, Filesystem, IoStatSnapshot, Unit};
+use rust_safe_disk_info::{CpuStats, DeviceStats, Filesystem, IoStatSnapshot, Unit};
 use std::rc::Rc;
 
 use crate::errors::{ERROR_MODULE_NAME, RhaiDiskinfoErrorKind};
@@ -66,9 +66,9 @@ pub(crate) fn get_rhai_context_guard(context: &NativeCallContext) -> impl Drop {
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::too_many_lines)]
 fn register_platform_specific_functions(engine: &mut Engine, cedar_auth: &Rc<CedarAuth>) {
-    use rust_disk_info::{FilesystemOptions, FilesystemOptionsBuilder, Filesystems};
+    use rust_safe_disk_info::{FilesystemOptions, FilesystemOptionsBuilder, Filesystems};
     #[cfg(target_os = "linux")]
-    use rust_disk_info::{UnmountOptions, UnmountOptionsBuilder, unmount};
+    use rust_safe_disk_info::{UnmountOptions, UnmountOptionsBuilder, unmount};
 
     register_derive_builder_options!(
         engine,

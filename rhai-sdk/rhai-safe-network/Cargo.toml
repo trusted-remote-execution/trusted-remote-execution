@@ -13,8 +13,8 @@ unsafe_code = "forbid"
 rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
 rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0" }
-rust-network = { path = "../../rust-sdk/safe-network", version = "0.1.0" }
-rust-system-info = { path = "../../rust-sdk/safe-system-info", version = "0.1.0" }
+rust-safe-network = { path = "../../rust-sdk/safe-network", version = "0.1.0" }
+rust-safe-system-info = { path = "../../rust-sdk/safe-system-info", version = "0.1.0" }
 rhai-safe-system-info = { version = "0.1.0", path = "../rhai-safe-system-info" }
 anyhow = "1"
 rhai = { version = "1", features = ["serde"] }
