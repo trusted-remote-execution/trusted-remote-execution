@@ -4,8 +4,8 @@ use rex_cedar_auth::test_utils::{
     DEFAULT_TEST_CEDAR_AUTH, TestCedarAuthBuilder, get_test_rex_principal,
 };
 use rex_test_utils::assertions::assert_error_contains;
-use rust_network::netstat;
-use rust_network::netstat::{InternetConnection, NetworkProtocol, TcpState, UnixSocket};
+use rust_safe_network::netstat;
+use rust_safe_network::netstat::{InternetConnection, NetworkProtocol, TcpState, UnixSocket};
 use std::collections::HashSet;
 use std::net::TcpListener;
 

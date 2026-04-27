@@ -1,13 +1,15 @@
 [package]
-name = "rust-disk-info"
+name = "rust-safe-disk-info"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Safe disk information SDK for REX with Cedar authorization"
 
 [dependencies]
 sysinfo = { version = "0.35", features = ["linux-tmpfs", "linux-netdevs"] }
-rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
-rust-sdk-common-utils = { version = "*", path = "../sdk-common-utils" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
+rust-sdk-common-utils = { version = "0.1.0", path = "../sdk-common-utils" }
 derive_builder = "0.20"
 anyhow = "1.0"
 cedar-policy = "4.2"
@@ -23,7 +25,7 @@ procfs = { version = "0.17", default-features = false }
 rustix = { version = "1", features = ["mount"] }
 
 [dev-dependencies]
-rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*", features = [
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0", features = [
     "test-utils",
 ] }
-rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+rex-test-utils = { path = "../../core/rex-test-utils", version = "0.1.0" }

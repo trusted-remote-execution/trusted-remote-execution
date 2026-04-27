@@ -61,7 +61,7 @@ fn test_ip_addr_unauthorized() {
 #[test]
 fn test_ip_addr_network_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_network::Network;
+    use rust_safe_network::Network;
 
     let engine = create_test_engine_and_register();
     let interfaces: Array = engine.eval("ip_addr()").unwrap();

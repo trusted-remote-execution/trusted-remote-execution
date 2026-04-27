@@ -15,7 +15,7 @@ use rhai::Array;
 #[cfg(target_os = "linux")]
 pub(crate) fn df(cedar_auth: &CedarAuth) -> Result<Array, String> {
     use rhai::Dynamic;
-    use rust_disk_info::{FilesystemOptionsBuilder, Filesystems};
+    use rust_safe_disk_info::{FilesystemOptionsBuilder, Filesystems};
 
     let fs_opts = FilesystemOptionsBuilder::default()
         .build()

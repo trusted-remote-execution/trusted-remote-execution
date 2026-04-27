@@ -1,12 +1,12 @@
 //! Network statistics types for use in Rhai scripts
 //!
-//! This module re-exports network protocol and state types from [`rust_network`] for use in Rhai,
+//! This module re-exports network protocol and state types from [`rust_safe_network`] for use in Rhai,
 //! providing constants and comparison operators for network statistics operations.
 use rhai::plugin::{
     Dynamic, FnNamespace, FuncRegistration, Module, NativeCallContext, PluginFunc, RhaiResult,
     TypeId, export_module, mem,
 };
-use rust_network::{NetworkProtocol, TcpState, UnixProtocol, UnixSocketState};
+use rust_safe_network::{NetworkProtocol, TcpState, UnixProtocol, UnixSocketState};
 
 #[allow(non_upper_case_globals)]
 #[allow(unreachable_pub)]

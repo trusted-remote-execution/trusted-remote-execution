@@ -2,7 +2,9 @@
 name = "rex-logger"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Structured logging with tracing and in-memory log capture for REX"
 
 [dependencies]
 anyhow = "1.0"

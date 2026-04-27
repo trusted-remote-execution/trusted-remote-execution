@@ -2,7 +2,9 @@
 name = "rex-cedar-auth"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Cedar-based authorization engine for REX trusted remote execution"
 
 [features]
 default = []
@@ -21,11 +23,11 @@ derive_builder = "0.20"
 uuid = { version = "1", features = ["v4"] }
 whoami = "1"
 clap = { version = "4", features = ["derive"] }
-rex-policy-schema = { path = "../rex-policy-schema", optional = true }
-rex-logger = { path = "../rex-logger", version = "*" }
+rex-policy-schema = { path = "../rex-policy-schema", version = "0.1.0", optional = true }
+rex-logger = { path = "../rex-logger", version = "0.1.0" }
 
 [dev-dependencies]
 rstest = "0"
 tempfile = "3"
-rex-cedar-auth = { path = ".", version = "*", features = ["test-utils"] }
-rex-test-utils = { path = "../rex-test-utils", version = "*" }
+rex-cedar-auth = { path = ".", version = "0.1.0", features = ["test-utils"] }
+rex-test-utils = { path = "../rex-test-utils", version = "0.1.0" }

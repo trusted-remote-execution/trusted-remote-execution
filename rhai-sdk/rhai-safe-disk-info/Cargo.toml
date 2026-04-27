@@ -2,18 +2,19 @@
 name = "rhai-safe-disk-info"
 version.workspace = true
 edition.workspace = true
-
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Rhai bindings for safe disk information access in REX scripts"
 
 [lints.rust]
 unsafe_code = "forbid"
 
 [dependencies]
-rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*" }
-rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "*" }
-rust-disk-info = { path = "../../rust-sdk/safe-disk-info", version = "*" }
-rust-safe-io = { path = "../../rust-sdk/safe-io", version = "*" }
-rex-logger = { path = "../../core/rex-logger", version = "*" }
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0" }
+rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
+rust-safe-disk-info = { path = "../../rust-sdk/safe-disk-info", version = "0.1.0" }
+rust-safe-io = { path = "../../rust-sdk/safe-io", version = "0.1.0" }
+rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 anyhow = "1"
 derive_builder = "0"
 rhai = { version = "1", features = ["serde"] }
@@ -23,10 +24,10 @@ strum_macros = "0.27"
 nix = "0.30"
 
 [dev-dependencies]
-rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+rex-test-utils = { path = "../../core/rex-test-utils", version = "0.1.0" }
 serde_json = "1"
 
 [build-dependencies]
-rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*", features = [
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0", features = [
     "build-validation",
 ] }

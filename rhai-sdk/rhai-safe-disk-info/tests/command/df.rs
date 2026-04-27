@@ -75,7 +75,7 @@ fn test_df_unauthorized() {
 #[test]
 fn test_df_filesystem_registry_completeness() {
     use rex_test_utils::rhai::safe_io::assert_rhai_getters_match_serde_fields;
-    use rust_disk_info::Filesystem;
+    use rust_safe_disk_info::Filesystem;
 
     let engine = create_test_engine_and_register();
     let filesystems: Array = engine.eval("df()").unwrap();

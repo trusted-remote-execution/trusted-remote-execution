@@ -14,7 +14,7 @@
 
 use anyhow::Result;
 use rhai::EvalAltResult;
-use rust_network::Response;
+use rust_safe_network::Response;
 
 /// HTTP client for making network requests.
 ///
@@ -67,7 +67,7 @@ impl Request {
 }
 
 impl Client {
-    /// Creates a new [`rust_network::Client`] instance
+    /// Creates a new [`rust_safe_network::Client`] instance
     ///
     /// # Example
     ///

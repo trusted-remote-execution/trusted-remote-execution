@@ -27,7 +27,7 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_disk_info::RustDiskinfoError;
+/// use rust_safe_disk_info::RustDiskinfoError;
 /// use std::path::PathBuf;
 ///
 /// let error = RustDiskinfoError::InvalidPath {

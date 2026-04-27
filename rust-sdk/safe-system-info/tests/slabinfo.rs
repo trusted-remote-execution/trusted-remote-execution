@@ -3,7 +3,7 @@
 use rex_cedar_auth::fs::actions::FilesystemAction;
 use rex_test_utils::assertions::assert_error_contains;
 use rust_safe_io::errors::RustSafeIoError;
-use rust_system_info::SystemInfo;
+use rust_safe_system_info::SystemInfo;
 use std::io::ErrorKind;
 
 mod slabinfo_tests {
@@ -28,7 +28,7 @@ mod slabinfo_tests {
         );
 
         match slabinfo_result.unwrap_err() {
-            rust_system_info::RustSysteminfoError::SafeIoError(RustSafeIoError::IoError(
+            rust_safe_system_info::RustSysteminfoError::SafeIoError(RustSafeIoError::IoError(
                 io_error,
             )) => {
                 assert_eq!(io_error.raw_os_error(), Some(13));

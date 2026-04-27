@@ -23,7 +23,7 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_network::RustNetworkError;
+/// use rust_safe_network::RustNetworkError;
 ///
 /// // Creating a permission denied error
 /// let error = RustNetworkError::PermissionDenied {

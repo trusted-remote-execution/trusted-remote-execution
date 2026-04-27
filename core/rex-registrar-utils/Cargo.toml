@@ -2,7 +2,9 @@
 name = "rex-runner-registrar-utils"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Build-time and runtime utilities for REX runner registrar crates"
 
 [features]
 # Feature flag for build-time validation utilities

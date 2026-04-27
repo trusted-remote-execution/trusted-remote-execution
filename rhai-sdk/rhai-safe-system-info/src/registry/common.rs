@@ -5,12 +5,12 @@ use rex_cedar_auth::cedar_auth::CedarAuth;
 use std::rc::Rc;
 use std::time::Duration;
 
-use rust_system_info::{
+use rust_safe_system_info::{
     DmesgEntry, DmesgOptions, DmesgOptionsBuilder, Meminfo, ResolveConfig, ResolveConfigBuilder,
     Swapinfo, SystemInfo, TransportProtocol, UnameInfo,
 };
 #[cfg(target_os = "linux")]
-use rust_system_info::{SlabEntry, SlabInfo, SlabSummary, SysctlEntry, SysctlManager};
+use rust_safe_system_info::{SlabEntry, SlabInfo, SlabSummary, SysctlEntry, SysctlManager};
 
 use crate::errors::{ERROR_MODULE_NAME, RhaiSysteminfoErrorKind};
 use crate::transport_protocol::transport_protocol_type_mod;

@@ -11,7 +11,7 @@ use std::time::Duration;
 /// # Examples
 ///
 /// ```no_run
-/// use rust_system_info::options::DmesgOptionsBuilder;
+/// use rust_safe_system_info::options::DmesgOptionsBuilder;
 ///
 /// let dmesg_options = DmesgOptionsBuilder::default()
 ///     .human_readable_time(true)
@@ -67,7 +67,7 @@ impl From<&str> for DnsResolver {
 /// # Examples
 ///
 /// ```no_run
-/// use rust_system_info::options::{ResolveConfigBuilder, TransportProtocol, DnsResolver};
+/// use rust_safe_system_info::options::{ResolveConfigBuilder, TransportProtocol, DnsResolver};
 /// use std::time::Duration;
 ///
 /// // Simple case - use all defaults

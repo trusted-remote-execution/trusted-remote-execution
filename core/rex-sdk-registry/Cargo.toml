@@ -2,20 +2,22 @@
 name = "rex-sdk-registry"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "SDK module registry for REX Rhai script engine"
 
 [dependencies]
 rhai = "1"
-rex-cedar-auth = { path = "../rex-cedar-auth", version = "*" }
-rex-runner-registrar-utils = { path = "../rex-registrar-utils", version = "*" }
-rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "*" }
-rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "*" }
-rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "*" }
-rhai-safe-network = { path = "../../rhai-sdk/rhai-safe-network", version = "*" }
-rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "*" }
-rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "*" }
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "0.1.0" }
+rex-runner-registrar-utils = { path = "../rex-registrar-utils", version = "0.1.0" }
+rhai-safe-io = { path = "../../rhai-sdk/rhai-safe-io", version = "0.1.0" }
+rhai-safe-system-info = { path = "../../rhai-sdk/rhai-safe-system-info", version = "0.1.0" }
+rhai-safe-disk-info = { path = "../../rhai-sdk/rhai-safe-disk-info", version = "0.1.0" }
+rhai-safe-network = { path = "../../rhai-sdk/rhai-safe-network", version = "0.1.0" }
+rhai-sdk-common-utils = { path = "../../rhai-sdk/rhai-sdk-common-utils", version = "0.1.0" }
+rhai-safe-process-mgmt = { path = "../../rhai-sdk/rhai-safe-process-mgmt", version = "0.1.0" }
 
 [dev-dependencies]
-rex-cedar-auth = { path = "../rex-cedar-auth", version = "*", features = [
+rex-cedar-auth = { path = "../rex-cedar-auth", version = "0.1.0", features = [
     "test-utils",
 ] }

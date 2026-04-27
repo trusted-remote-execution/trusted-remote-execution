@@ -13,7 +13,7 @@ use rhai::Array;
 use rhai::{Dynamic, Map};
 
 #[cfg(target_os = "linux")]
-use rust_system_info::SysctlManager;
+use rust_safe_system_info::SysctlManager;
 
 /// Read a kernel parameter value.
 #[cfg(target_os = "linux")]

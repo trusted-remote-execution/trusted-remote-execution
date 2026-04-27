@@ -15,7 +15,7 @@ use rhai::Array;
 #[cfg(target_os = "linux")]
 pub(crate) fn dmesg(cedar_auth: &CedarAuth) -> Result<Array, String> {
     use rhai::Dynamic;
-    use rust_system_info::{DmesgOptionsBuilder, SystemInfo};
+    use rust_safe_system_info::{DmesgOptionsBuilder, SystemInfo};
 
     let sysinfo = SystemInfo::new().map_err(|e| e.to_string())?;
     let options = DmesgOptionsBuilder::default()

@@ -2,7 +2,9 @@
 name = "rex-metrics-and-alarms"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Metrics collection and alarm management for REX"
 
 [features]
 # Enable shared registry functionality for thread-safe alarm and metric registries

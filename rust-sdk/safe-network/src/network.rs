@@ -11,8 +11,8 @@ use crate::auth::is_authorized_url;
 use derive_getters::Getters;
 use rex_cedar_auth::cedar_auth::CedarAuth;
 use rex_cedar_auth::network::actions::NetworkAction;
-use rust_system_info::auth::is_authorized_sysinfo;
-use rust_system_info::{RustSysteminfoError, TransportProtocol};
+use rust_safe_system_info::auth::is_authorized_sysinfo;
+use rust_safe_system_info::{RustSysteminfoError, TransportProtocol};
 use serde::Serialize;
 use sysinfo::Networks;
 
@@ -116,7 +116,7 @@ mod tests {
     };
     use rex_test_utils::assertions::assert_error_contains;
     use rstest::rstest;
-    use rust_system_info::TransportProtocol;
+    use rust_safe_system_info::TransportProtocol;
     use std::net::TcpListener;
 
     use crate::network::ip_addresses;

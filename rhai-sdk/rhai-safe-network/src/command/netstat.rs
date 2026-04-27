@@ -17,7 +17,7 @@ use rhai::{Array, Dynamic};
 #[cfg(target_os = "linux")]
 #[allow(clippy::cast_possible_wrap)]
 pub(crate) fn netstat(cedar_auth: &CedarAuth) -> Result<Map, String> {
-    let stats = rust_network::netstat::network_stats(cedar_auth).map_err(|e| e.to_string())?;
+    let stats = rust_safe_network::netstat::network_stats(cedar_auth).map_err(|e| e.to_string())?;
 
     let internet: Array = stats
         .internet_connections()

@@ -1,6 +1,6 @@
 //! `TransportProtocol` type for configuring DNS resolution protocol
 //!
-//! This module re-exports the [`rust_system_info::options::TransportProtocol`] type for use in Rhai
+//! This module re-exports the [`rust_safe_system_info::options::TransportProtocol`] type for use in Rhai
 use rhai::plugin::{
     Dynamic, FnNamespace, FuncRegistration, Module, NativeCallContext, PluginFunc, RhaiResult,
     TypeId, export_module, mem,
@@ -8,7 +8,7 @@ use rhai::plugin::{
 
 #[export_module]
 pub mod transport_protocol_type_mod {
-    use rust_system_info::options::TransportProtocol;
+    use rust_safe_system_info::options::TransportProtocol;
 
     pub const AUTO: TransportProtocol = TransportProtocol::Auto;
     pub const UDP: TransportProtocol = TransportProtocol::UDP;
@@ -31,7 +31,7 @@ pub mod transport_protocol_type_mod {
 mod test {
     use super::transport_protocol_type_mod::*;
     use rstest::rstest;
-    use rust_system_info::options::TransportProtocol;
+    use rust_safe_system_info::options::TransportProtocol;
 
     /// Given: two TransportProtocols
     /// When: they are compared using the equals "==" operator

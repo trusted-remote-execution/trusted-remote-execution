@@ -2,7 +2,9 @@
 name = "rex-policy-schema"
 version.workspace = true
 edition.workspace = true
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Cedar policy schema definitions for REX authorization"
 
 [dev-dependencies]
 serde_json = "1.0"

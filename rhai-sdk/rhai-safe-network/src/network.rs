@@ -13,9 +13,9 @@
 
 use anyhow::Result;
 use rhai::EvalAltResult;
-use rust_network::netstat::NetworkStats;
-use rust_network::{Connection, Network};
-use rust_system_info::TransportProtocol;
+use rust_safe_network::netstat::NetworkStats;
+use rust_safe_network::{Connection, Network};
+use rust_safe_system_info::TransportProtocol;
 
 /// Connects to an endpoint. Currently no other actions are supported on the connection besides
 /// opening a new connection.

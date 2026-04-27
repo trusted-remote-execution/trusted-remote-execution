@@ -22,7 +22,7 @@ pub mod termination;
 /// register_fn_with_auth!(
 ///     engine,
 ///     "probe_port",
-///     rust_network::layer_four::probe_port,
+///     rust_safe_network::layer_four::probe_port,
 ///     cedar_auth,
 ///     endpoint: &str,
 ///     port: i64 => u16,

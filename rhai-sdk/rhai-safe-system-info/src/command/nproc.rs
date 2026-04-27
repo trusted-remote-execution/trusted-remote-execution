@@ -11,7 +11,7 @@ use rex_cedar_auth::cedar_auth::CedarAuth;
 /// Returns the number of logical CPUs.
 #[cfg(target_os = "linux")]
 pub(crate) fn nproc(cedar_auth: &CedarAuth) -> Result<i64, String> {
-    use rust_system_info::SystemInfo;
+    use rust_safe_system_info::SystemInfo;
 
     let sysinfo = SystemInfo::new().map_err(|e| e.to_string())?;
     let count = sysinfo.cpu_count(cedar_auth).map_err(|e| e.to_string())?;

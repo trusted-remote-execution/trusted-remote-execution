@@ -6,7 +6,7 @@
 
 use rex_runner_registrar_utils::execution_context::ExecutionContext;
 use rhai::{Dynamic, EvalAltResult, Position};
-use rust_system_info::errors::RustSysteminfoError;
+use rust_safe_system_info::errors::RustSysteminfoError;
 use strum_macros::{AsRefStr, Display, EnumString};
 
 pub(crate) const ERROR_MODULE_NAME: &str = "SysteminfoErrorKind";

@@ -12,7 +12,7 @@ use rhai::Dynamic;
 /// Returns system information as an `UnameInfo` struct (Linux only).
 #[cfg(target_os = "linux")]
 pub(crate) fn uname(cedar_auth: &CedarAuth) -> Result<Dynamic, String> {
-    let sysinfo = rust_system_info::SystemInfo::new().map_err(|e| e.to_string())?;
+    let sysinfo = rust_safe_system_info::SystemInfo::new().map_err(|e| e.to_string())?;
     let info = sysinfo.uname_info(cedar_auth).map_err(|e| e.to_string())?;
     Ok(Dynamic::from(info))
 }

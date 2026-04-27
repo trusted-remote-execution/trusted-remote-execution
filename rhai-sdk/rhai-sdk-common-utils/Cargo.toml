@@ -2,27 +2,28 @@
 name = "rhai-sdk-common-utils"
 version.workspace = true
 edition.workspace = true
-
-publish = false
+license.workspace = true
+repository.workspace = true
+description = "Common utilities shared across REX Rhai SDK crates"
 
 [lints.rust]
 unsafe_code = "forbid"
 
 [dependencies]
-rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*" }
-rust-sdk-common-utils = { version = "*", path = "../../rust-sdk/sdk-common-utils" }
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0" }
+rust-sdk-common-utils = { version = "0.1.0", path = "../../rust-sdk/sdk-common-utils" }
 assert_fs = "1"
 rhai = "1"
 rstest = "0.26"
-rex-logger = { path = "../../core/rex-logger", version = "*" }
+rex-logger = { path = "../../core/rex-logger", version = "0.1.0" }
 strum = "0.27"
 strum_macros = "0.27"
 
 [dev-dependencies]
 rhai = { version = "1", features = ["metadata"] }
-rex-test-utils = { path = "../../core/rex-test-utils", version = "*" }
+rex-test-utils = { path = "../../core/rex-test-utils", version = "0.1.0" }
 
 [build-dependencies]
-rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "*", features = [
+rex-runner-registrar-utils = { path = "../../core/rex-registrar-utils", version = "0.1.0", features = [
     "build-validation",
 ] }

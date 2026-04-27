@@ -5,7 +5,7 @@
 //! their basic categories for use in Rhai scripts.
 
 use rhai::{Dynamic, EvalAltResult, Position};
-use rust_network::errors::RustNetworkError;
+use rust_safe_network::errors::RustNetworkError;
 use strum_macros::{AsRefStr, Display, EnumString};
 
 pub(crate) const ERROR_MODULE_NAME: &str = "NetworkErrorKind";

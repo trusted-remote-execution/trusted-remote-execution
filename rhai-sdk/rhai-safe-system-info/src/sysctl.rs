@@ -10,7 +10,7 @@
     clippy::trivially_copy_pass_by_ref
 )]
 use rhai::EvalAltResult;
-use rust_system_info::SysctlEntry;
+use rust_safe_system_info::SysctlEntry;
 
 /// Read and write kernel parameters via sysctl.
 #[derive(Clone, Debug, Copy)]
@@ -18,7 +18,7 @@ use rust_system_info::SysctlEntry;
 pub struct SysctlManager;
 
 impl SysctlManager {
-    /// Creates a new [`rust_system_info::SysctlManager`] instance
+    /// Creates a new [`rust_safe_system_info::SysctlManager`] instance
     ///
     /// # Example
     ///

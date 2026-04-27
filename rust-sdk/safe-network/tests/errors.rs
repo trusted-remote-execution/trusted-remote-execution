@@ -1,5 +1,5 @@
 //! Comprehensive tests for RustNetworkError to achieve 100% branch coverage
-use rust_network::RustNetworkError;
+use rust_safe_network::RustNetworkError;
 
 /// Test creating each RustNetworkError variant
 mod construction_tests {
