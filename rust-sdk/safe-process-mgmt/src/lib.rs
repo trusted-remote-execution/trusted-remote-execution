@@ -50,7 +50,7 @@ use rustix::fd::OwnedFd;
 use rustix::process::{Pid as RustixPid, PidfdFlags, Signal, pidfd_open, pidfd_send_signal};
 use serde::Serialize;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
 #[allow(clippy::disallowed_types)]
@@ -157,6 +157,8 @@ pub enum FileType {
     Blk, // Block device
     #[serde(rename = "FIFO")]
     Fifo, // FIFO/Named pipe
+    #[serde(rename = "ANON_INODE")]
+    AnonInode, // Anonymous inode (eventpoll, eventfd, bpf-*, perf_event, etc.)
     #[serde(rename = "UNK")]
     Unknown, // Unknown or unsupported type
 }
@@ -171,6 +173,7 @@ impl fmt::Display for FileType {
             FileType::Chr => "CHR",
             FileType::Blk => "BLK",
             FileType::Fifo => "FIFO",
+            FileType::AnonInode => "ANON_INODE",
             FileType::Unknown => "UNK",
         };
         write!(f, "{file_type}")
@@ -461,7 +464,6 @@ impl NamespaceType {
 
                 Ok((target_file_handle, context))
             }
-
             NamespaceType::Mount => Err(RustSafeProcessMgmtError::NamespaceOperationError {
                 reason: "Operation not supported".to_string(),
                 error: format!(
@@ -492,7 +494,6 @@ impl NamespaceType {
                 context.add_namespace(self.clone_flag(), file);
                 Ok(context)
             }
-
             Err(e) => {
                 warn!(
                     "Failed to open file descriptor to current process {name} namespace with pid: {current_process_pid}. Hint: try running with CAP_SYS_ADMIN, CAP_SYS_PTRACE, CAP_SYS_CHROOT capabilities"
@@ -676,7 +677,7 @@ impl ProcessManager {
     }
 
     /// Gets a process handle by PID, lazily caching it if not already present.
-    /// All access to process_handles for a specific PID should go through this
+    /// All access to `process_handles` for a specific PID should go through this
     /// method to ensure the cache is transparently populated.
     fn get_process_handle(&mut self, pid: u32) -> Option<&ProcessHandle> {
         self.ensure_process_cached(pid);
@@ -763,10 +764,10 @@ impl ProcessManager {
 
         let mut parts: Vec<&str> = full_command.split(' ').collect();
 
-        if let Some(first) = parts.first_mut()
-            && let Some(pos) = first.rfind('/')
-        {
-            *first = &first[pos + 1..];
+        if let Some(first) = parts.first_mut() {
+            if let Some(pos) = first.rfind('/') {
+                *first = &first[pos + 1..];
+            }
         }
 
         parts.join(" ")
@@ -867,7 +868,6 @@ impl ProcessManager {
                             .user_id()
                             .map_or_else(|| UNKNOWN_STATE.to_string(), |uid| uid.to_string())
                     });
-
                 let command = Self::format_command(sys_proc.cmd());
                 (
                     username,
@@ -1292,7 +1292,6 @@ impl RcProcessManager {
                 u32::try_from(pid).map_err(|e| RustSafeProcessMgmtError::ValidationError {
                     reason: format!("Invalid PID value {pid}: {e}"),
                 })?;
-
             let process_handle = process_manager.get_process_handle(u32_pid).ok_or_else(|| {
                 RustSafeProcessMgmtError::ProcessNotFound {
                     reason: "Process not found".to_string(),
@@ -1326,10 +1325,10 @@ impl RcProcessManager {
                 }
 
                 // Check username if specified
-                if let Some(target_user) = &kill_options.username
-                    && user != target_user
-                {
-                    matches = false;
+                if let Some(target_user) = &kill_options.username {
+                    if user != target_user {
+                        matches = false;
+                    }
                 }
 
                 // Check command if specified
@@ -1476,7 +1475,6 @@ impl RcProcessManager {
 
                             fuser_results.push(fuser_info);
                         }
-
                         Err(RustSafeProcessMgmtError::PermissionDenied {
                             principal,
                             action,
@@ -1550,20 +1548,81 @@ impl RcProcessManager {
         cedar_auth: &CedarAuth,
         options: LsofOptions,
     ) -> Result<Vec<OpenFileInfo>, RustSafeProcessMgmtError> {
-        let target_dir = canonicalize_path(&options.path)?;
-        let include_subdirectories = options.include_subdir;
-
-        let mut process_manager = self.process_manager.borrow_mut();
-        process_manager.refresh_process_info();
-
-        // Ensure we can open and walk /proc
         let entity = &DirEntity::new(Path::new(PROC))?;
         is_authorized(cedar_auth, &FilesystemAction::Open, entity)?;
         is_authorized(cedar_auth, &FilesystemAction::Read, entity)?;
 
-        let mut lsof_results = Vec::new();
+        let unix_socket_paths = build_unix_socket_path_map();
 
-        // We keep this flag to check if a process was skipped due to enforced cedar policy
+        if let Some(pid) = options.pid {
+            self.lsof_by_pid(cedar_auth, pid, &unix_socket_paths)
+        } else {
+            let path = options.path.unwrap_or_default();
+            let target_dir = canonicalize_path(&path)?;
+            self.lsof_by_path(
+                cedar_auth,
+                &target_dir,
+                options.include_subdir,
+                &unix_socket_paths,
+            )
+        }
+    }
+
+    fn lsof_by_pid(
+        &self,
+        cedar_auth: &CedarAuth,
+        pid: u32,
+        unix_socket_paths: &HashMap<u64, String>,
+    ) -> Result<Vec<OpenFileInfo>, RustSafeProcessMgmtError> {
+        let mut process_manager = self.process_manager.borrow_mut();
+        process_manager.refresh_process_info();
+
+        #[allow(clippy::cast_possible_wrap)]
+        let process = ProcfsProcess::new(pid as i32).map_err(|_| {
+            RustSafeProcessMgmtError::ProcessNotFound {
+                reason: format!("Process with PID {pid} does not exist"),
+                pid,
+            }
+        })?;
+
+        let (username, command, name) =
+            process_manager.get_process_info_and_cache(&process, process.pid);
+
+        let process_entity = ProcessEntity::new(
+            process.pid.to_string(),
+            name.clone(),
+            username.clone(),
+            command.clone(),
+        );
+        is_authorized(cedar_auth, &ProcessAction::ListFds, &process_entity)?;
+
+        Ok(get_all_open_files_for_process(&process, unix_socket_paths)
+            .into_iter()
+            .map(|(file_path, file_type, access_type)| {
+                OpenFileInfo::new(
+                    pid,
+                    name.clone(),
+                    username.clone(),
+                    command.clone(),
+                    access_type,
+                    file_type,
+                    file_path,
+                )
+            })
+            .collect())
+    }
+
+    fn lsof_by_path(
+        &self,
+        cedar_auth: &CedarAuth,
+        target_dir: &str,
+        include_subdirectories: bool,
+        unix_socket_paths: &HashMap<u64, String>,
+    ) -> Result<Vec<OpenFileInfo>, RustSafeProcessMgmtError> {
+        let mut process_manager = self.process_manager.borrow_mut();
+        process_manager.refresh_process_info();
+
+        let mut lsof_results = Vec::new();
         let mut processes_skipped = false;
 
         for proc_result in procfs::process::all_processes().map_err(|e| {
@@ -1585,36 +1644,31 @@ impl RcProcessManager {
 
                     match is_authorized(cedar_auth, &ProcessAction::ListFds, &process_entity) {
                         Ok(()) => {
-                            let open_files =
-                                get_open_files(&process, &target_dir, include_subdirectories);
-
-                            if open_files.is_empty() {
-                                continue;
-                            }
+                            let all_files =
+                                get_all_open_files_for_process(&process, unix_socket_paths);
 
                             #[allow(clippy::cast_sign_loss)]
                             let pid_u32 = process.pid.max(0) as u32;
 
-                            for (file_path, file_type, access_type) in open_files {
-                                let open_file_info = OpenFileInfo::new(
-                                    pid_u32,
-                                    name.clone(),
-                                    username.clone(),
-                                    command.clone(),
-                                    access_type,
-                                    file_type,
-                                    file_path,
-                                );
-                                lsof_results.push(open_file_info);
+                            for (file_path, file_type, access_type) in all_files {
+                                if path_matches(&file_path, target_dir, include_subdirectories) {
+                                    lsof_results.push(OpenFileInfo::new(
+                                        pid_u32,
+                                        name.clone(),
+                                        username.clone(),
+                                        command.clone(),
+                                        access_type,
+                                        file_type,
+                                        file_path,
+                                    ));
+                                }
                             }
                         }
-
                         Err(RustSafeProcessMgmtError::PermissionDenied {
                             principal,
                             action,
                             ..
                         }) => {
-                            // Skip this process - normal filtering behavior as the user does not have permission to list file descriptors for this process
                             if !processes_skipped {
                                 warn!(
                                     "Some processes have been skipped due to enforced cedar policy: {principal} unauthorized to perform {action}"
@@ -1796,6 +1850,10 @@ impl RcProcessManager {
         );
         is_authorized(cedar_auth, &ProcessAction::Trace, &process_entity)?;
 
+        // 2 reasons to stop coverage:
+        // * pstack doesn't work on the Amazon build fleet for a newly spawned process, although (for now) pstack-ing PID 1 works.
+        // * pstack isn't even installed on AL2023, so we couldn't run this test on that platform in any case.
+        // To avoid future flaky tests, we just rely on integration tests to cover this.
         let pstack_file = open_pstack_executable(cedar_auth)?;
 
         let mut execute_options = ExecuteOptionsBuilder::default();
@@ -2247,6 +2305,9 @@ pub fn open_fd(
 fn open_pstack_executable(
     cedar_auth: &CedarAuth,
 ) -> Result<RcFileHandle, RustSafeProcessMgmtError> {
+    // on Amazon Linux 2, installation of gdb results in pstack being symlinked to gstack.
+    // we open the symlink target directly so we don't have to follow symlinks when opening an executable.
+    // AL2023 doesn't have pstack installed by default, in that case we'll assume vendors install it as part of AMI build.
     open_fd(cedar_auth, "/usr/bin", "gstack")
 }
 
@@ -2280,11 +2341,11 @@ fn check_file_descriptors(
 ) {
     if let Ok(fds) = proc.fd() {
         for fd_info in fds.flatten() {
-            if let FDTarget::Path(fd_path) = &fd_info.target
-                && path_matches(&fd_path.to_string_lossy(), canonical_path_str, false)
-            {
-                access_types.push(AccessType::FileDescriptor);
-                break; // Once we find one file descriptor, we can stop checking
+            if let FDTarget::Path(fd_path) = &fd_info.target {
+                if path_matches(&fd_path.to_string_lossy(), canonical_path_str, false) {
+                    access_types.push(AccessType::FileDescriptor);
+                    break; // Once we find one file descriptor, we can stop checking
+                }
             }
         }
     }
@@ -2310,7 +2371,6 @@ fn check_memory_mappings(
                 }
             }
         }
-
         Err(e) => {
             if e.to_string().to_lowercase().contains("permission denied") {
                 warn!(
@@ -2358,10 +2418,10 @@ fn check_simple_path<P: AsRef<Path>>(
     access_type: AccessType,
     access_types: &mut Vec<AccessType>,
 ) {
-    if let Ok(path) = path_result
-        && path_matches(&path.as_ref().to_string_lossy(), canonical_path_str, false)
-    {
-        access_types.push(access_type);
+    if let Ok(path) = path_result {
+        if path_matches(&path.as_ref().to_string_lossy(), canonical_path_str, false) {
+            access_types.push(access_type);
+        }
     }
 }
 
@@ -2394,56 +2454,63 @@ fn detect_process_access_types(proc: &ProcfsProcess, canonical_path_str: &str) -
     access_types
 }
 
-// Returns open files for a given process
-fn get_open_files(
+/// Builds a lookup table mapping Unix domain socket inodes to their filesystem paths.
+fn build_unix_socket_path_map() -> HashMap<u64, String> {
+    let mut map = HashMap::new();
+    if let Ok(entries) = procfs::net::unix() {
+        for entry in entries {
+            if let Some(path) = entry.path {
+                map.insert(entry.inode, path.to_string_lossy().to_string());
+            }
+        }
+    }
+    map
+}
+
+// Returns all open files for a given process.
+fn get_all_open_files_for_process(
     process: &ProcfsProcess,
-    target_dir: &str,
-    include_subdirectories: bool,
+    unix_socket_paths: &HashMap<u64, String>,
 ) -> Vec<(String, FileType, AccessType)> {
     let mut open_files = Vec::new();
 
-    scan_open_file_descriptors(process, target_dir, include_subdirectories, &mut open_files);
-    scan_memory_mappings(process, target_dir, include_subdirectories, &mut open_files);
+    if let Ok(cwd) = process.cwd() {
+        open_files.push((
+            cwd.to_string_lossy().to_string(),
+            FileType::Dir,
+            AccessType::CurrentDirectory,
+        ));
+    }
+    if let Ok(root) = process.root() {
+        open_files.push((
+            root.to_string_lossy().to_string(),
+            FileType::Dir,
+            AccessType::RootDirectory,
+        ));
+    }
+    if let Ok(exe) = process.exe() {
+        open_files.push((
+            exe.to_string_lossy().to_string(),
+            FileType::Reg,
+            AccessType::Executable,
+        ));
+    }
 
-    scan_directory(
-        process.cwd(),
-        target_dir,
-        include_subdirectories,
-        FileType::Dir,
-        AccessType::CurrentDirectory,
-        &mut open_files,
-    );
-    scan_directory(
-        process.exe(),
-        target_dir,
-        include_subdirectories,
-        FileType::Reg,
-        AccessType::Executable,
-        &mut open_files,
-    );
-    scan_directory(
-        process.root(),
-        target_dir,
-        include_subdirectories,
-        FileType::Dir,
-        AccessType::RootDirectory,
-        &mut open_files,
-    );
+    scan_memory_mappings(process, &mut open_files);
+    scan_open_file_descriptors(process, unix_socket_paths, &mut open_files);
 
     open_files
 }
 
 fn scan_open_file_descriptors(
     process: &ProcfsProcess,
-    target_dir: &str,
-    include_subdirectories: bool,
+    unix_socket_paths: &HashMap<u64, String>,
     open_files: &mut Vec<(String, FileType, AccessType)>,
 ) {
     if let Ok(fds) = process.fd() {
         for fd_info in fds.flatten() {
-            if let FDTarget::Path(fd_path) = &fd_info.target {
-                let fd_path_str = fd_path.to_string_lossy();
-                if path_matches(&fd_path_str, target_dir, include_subdirectories) {
+            let (fd_path_str, file_type) = match &fd_info.target {
+                FDTarget::Path(fd_path) => {
                     // File descriptor numbers are per-process: fd_info.fd is a number (e.g., 3) from the target process's
                     // fd table, but that same number in our process refers to a completely different file. Using fstat()
                     // on fd_info.fd would incorrectly stat our own fd 3 instead of the target process's fd 3.
@@ -2454,65 +2521,73 @@ fn scan_open_file_descriptors(
                     let file_type = stat(proc_fd_path.as_str())
                         .map(|stat_result| FileType::from_mode(stat_result.st_mode))
                         .unwrap_or(FileType::Unknown);
-
-                    open_files.push((
-                        fd_path_str.to_string(),
-                        file_type,
-                        AccessType::FileDescriptor,
-                    ));
+                    (fd_path.to_string_lossy().to_string(), file_type)
                 }
-            }
+                FDTarget::Socket(inode) => unix_socket_paths.get(inode).map_or_else(
+                    || (format!("socket:[{inode}]"), FileType::Sock),
+                    |path| (path.clone(), FileType::Sock),
+                ),
+                FDTarget::Net(inode) => (format!("net:[{inode}]"), FileType::Sock),
+                FDTarget::Pipe(inode) => (format!("pipe:[{inode}]"), FileType::Fifo),
+                FDTarget::AnonInode(name) => (format!("anon_inode:{name}"), FileType::AnonInode),
+                FDTarget::MemFD(name) => (format!("/memfd:{name}"), FileType::Reg),
+                FDTarget::Other(typ, inode) => (format!("{typ}:[{inode}]"), FileType::Unknown),
+            };
+
+            open_files.push((fd_path_str, file_type, AccessType::FileDescriptor));
         }
     }
 }
 
 fn scan_memory_mappings(
     process: &ProcfsProcess,
-    target_dir: &str,
-    include_subdirectories: bool,
     open_files: &mut Vec<(String, FileType, AccessType)>,
 ) {
-    match process.smaps() {
+    // Get exe's (dev, inode) to skip — already reported as Executable.
+    // Matches real lsof's process_proc_map() which skips maps matching the txt entry.
+    let exe_key: Option<(i32, i32, u64)> = process.maps().ok().and_then(|maps| {
+        let exe_path = process.exe().ok()?;
+        maps.0
+            .iter()
+            .find(|m| matches!(&m.pathname, ProcfsPath(p) if p == &exe_path))
+            .map(|m| (m.dev.0, m.dev.1, m.inode))
+    });
+
+    match process.maps() {
         Ok(maps) => {
-            for map in maps {
+            // Deduplicate by (dev, inode) — same approach as real lsof's saved_map.
+            // /proc/<pid>/maps reports one entry per mapping region; a single file can
+            // have multiple regions (text, rodata, data). We collapse them into one.
+            let mut seen: HashSet<(i32, i32, u64)> = HashSet::new();
+            for map in &maps.0 {
                 if let ProcfsPath(map_path) = &map.pathname {
-                    let map_path_str = map_path.to_string_lossy();
-                    if path_matches(&map_path_str, target_dir, include_subdirectories) {
-                        open_files.push((
-                            map_path_str.to_string(),
-                            FileType::Reg, // Memory mappings are regular files
-                            AccessType::MemoryMapped,
-                        ));
+                    if map.dev == (0, 0) && map.inode == 0 {
+                        continue;
                     }
+                    let key = (map.dev.0, map.dev.1, map.inode);
+                    if exe_key == Some(key) {
+                        continue;
+                    }
+                    if !seen.insert(key) {
+                        continue;
+                    }
+                    open_files.push((
+                        map_path.to_string_lossy().to_string(),
+                        FileType::Reg,
+                        AccessType::MemoryMapped,
+                    ));
                 }
             }
         }
-
         Err(e) => {
             if e.to_string().to_lowercase().contains("permission denied") {
                 warn!(
-                    "Process {} failed to read smaps: {} - Hint: try running with CAP_SYS_PTRACE capability",
+                    "Process {} failed to read maps: {} - Hint: try running with CAP_SYS_PTRACE capability",
                     process.pid, e
                 );
             } else {
-                warn!("Process {} failed to read smaps: {}", process.pid, e);
+                warn!("Process {} failed to read maps: {}", process.pid, e);
             }
-        }
-    }
-}
-
-fn scan_directory<P: AsRef<Path>>(
-    path_result: Result<P, procfs::ProcError>,
-    target_dir: &str,
-    include_subdirectories: bool,
-    file_type: FileType,
-    access_type: AccessType,
-    open_files: &mut Vec<(String, FileType, AccessType)>,
-) {
-    if let Ok(path) = path_result {
-        let path_str = path.as_ref().to_string_lossy();
-        if path_matches(&path_str, target_dir, include_subdirectories) {
-            open_files.push((path_str.to_string(), file_type, access_type));
         }
     }
 }
@@ -2534,20 +2609,20 @@ mod tests {
     /// Then: Should simplify the executable path while preserving arguments
     #[rstest]
     #[case(
-        vec!["/usr/bin/perl", "-w", "/opt/sbin/update-rpm", "--sleep", "84600"],
-        "perl -w /opt/sbin/update-rpm --sleep 84600"
+        vec!["/usr/bin/perl", "-w", "/apollo/sbin/update-rpm", "--sleep", "84600"],
+        "perl -w /apollo/sbin/update-rpm --sleep 84600"
     )]
     #[case(
         vec!["perl", "-w", "/path/to/script"],
         "perl -w /path/to/script"
     )]
     #[case(
-        vec!["/usr/bin/postgres", "-D", "/appdata/db", "-f", "/dev/null"],
-        "postgres -D /appdata/db -f /dev/null"
+        vec!["/usr/bin/postgres", "-D", "/rdsdbdata/db", "-f", "/dev/null"],
+        "postgres -D /rdsdbdata/db -f /dev/null"
     )]
     #[case(
-        vec!["postgres", "-D", "/appdata/db", "-f", "/dev/null"],
-        "postgres -D /appdata/db -f /dev/null"
+        vec!["postgres", "-D", "/rdsdbdata/db", "-f", "/dev/null"],
+        "postgres -D /rdsdbdata/db -f /dev/null"
     )]
     #[case(vec!["perl"], "perl")]
     #[case(vec![], "")]
@@ -2755,6 +2830,7 @@ mod tests {
     #[case(FileType::Chr, "CHR")]
     #[case(FileType::Blk, "BLK")]
     #[case(FileType::Fifo, "FIFO")]
+    #[case(FileType::AnonInode, "ANON_INODE")]
     #[case(FileType::Unknown, "UNK")]
     fn test_file_type_description(#[case] file_type: FileType, #[case] expected: &str) {
         let result = file_type.to_string();

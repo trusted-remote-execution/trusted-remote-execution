@@ -56,7 +56,12 @@ fn read_redaction_dictionary(cedar_auth: &CedarAuth) -> Result<String, RustSafeI
     let dir_handle = DirConfigBuilder::default()
         .path(parent_dir.clone())
         .build()?
-        .safe_open(cedar_auth, OpenDirOptionsBuilder::default().follow_symlinks(true).build()?)
+        .safe_open(
+            cedar_auth,
+            OpenDirOptionsBuilder::default()
+                .follow_symlinks(true)
+                .build()?,
+        )
         .map_err(|e| RustSafeIoError::DirectoryError {
             reason: format!("Failed to open redaction dictionary directory: {e}"),
             path: PathBuf::from(parent_dir),
