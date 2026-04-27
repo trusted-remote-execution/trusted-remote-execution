@@ -16,6 +16,7 @@ use rstest::rstest;
 use std::fs::{Permissions, read_link, read_to_string, set_permissions, symlink_metadata};
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::os::unix::net::UnixListener;
+use std::path::PathBuf;
 
 mod same_filesystem_tests {
     use crate::test_common::init_test_logger;
@@ -44,6 +45,18 @@ mod same_filesystem_tests {
         let dest_parent_dir = setup.dst_parent_dir;
         let dest_parent_handle = setup.dst_parent_handle;
 
+        // include a couple of levels of nested subdirectories and additional files
+        let src_sub_dir = setup.src_dir.child("sub_dir");
+        src_sub_dir.create_dir_all()?;
+        let src_sub_sub_dir = src_sub_dir.child("sub_sub_dir");
+        src_sub_sub_dir.create_dir_all()?;
+        src_sub_dir
+            .child("sub_dir_file.txt")
+            .write_str("sub dir file content")?;
+        src_sub_sub_dir
+            .child("sub_sub_dir_file.txt")
+            .write_str("sub sub dir file content")?;
+
         let dest_dirname = "moved_dir";
 
         let moved_dir_handle = src_parent_handle.safe_move(
@@ -57,35 +70,45 @@ mod same_filesystem_tests {
                 .unwrap(),
         )?;
 
+        let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
+        let dest_dir_path_str = dest_dir_path.to_string_lossy().into_owned();
+
+        assert_eq!(
+            moved_dir_handle.full_path(),
+            dest_dir_path_str,
+            "Expected returned dir_handle to have the correct destination"
+        );
+
         assert!(
             !src_parent_dir.child(src_dirname).exists(),
             "Expected source directory to no longer exist after move"
         );
 
-        let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after move"
-        );
+        let expected_files: Vec<String> = vec![
+            dest_dir_path_str.clone(),
+            format!("{dest_dir_path_str}/test_file.txt"),
+            format!("{dest_dir_path_str}/sub_dir"),
+            format!("{dest_dir_path_str}/sub_dir/sub_dir_file.txt"),
+            format!("{dest_dir_path_str}/sub_dir/sub_sub_dir"),
+            format!("{dest_dir_path_str}/sub_dir/sub_sub_dir/sub_sub_dir_file.txt"),
+        ];
 
-        let moved_file_path = dest_dir_path.join("test_file.txt");
-        assert!(
-            moved_file_path.exists(),
-            "Expected file inside moved directory to exist"
-        );
+        validate_dir_entries(&dest_dir_path, &expected_files)?;
 
-        let moved_file_content = read_to_string(moved_file_path)?;
-        assert_eq!(
-            moved_file_content, file_content,
-            "Expected moved file content to match original content"
-        );
-
-        let entries = moved_dir_handle.safe_list_dir(&DEFAULT_TEST_CEDAR_AUTH)?;
-        let has_test_file = entries.iter().any(|entry| entry.name() == "test_file.txt");
-        assert!(
-            has_test_file,
-            "Expected moved directory to contain the test file"
-        );
+        let files_to_validate = vec![
+            (format!("{dest_dir_path_str}/test_file.txt"), file_content),
+            (
+                format!("{dest_dir_path_str}/sub_dir/sub_dir_file.txt"),
+                "sub dir file content",
+            ),
+            (
+                format!("{dest_dir_path_str}/sub_dir/sub_sub_dir/sub_sub_dir_file.txt"),
+                "sub sub dir file content",
+            ),
+        ];
+        for (file_path, expected_content) in files_to_validate.iter() {
+            validate_file_contents(file_path, expected_content)?;
+        }
 
         Ok(())
     }
@@ -108,7 +131,7 @@ mod same_filesystem_tests {
 
         let dest_dirname = "moved_dir";
 
-        src_parent_handle.safe_move(
+        let moved_dir_handle = src_parent_handle.safe_move(
             &DEFAULT_TEST_CEDAR_AUTH,
             src_dir_handle,
             dest_parent_handle,
@@ -122,22 +145,24 @@ mod same_filesystem_tests {
         );
 
         let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after safe_move"
-        );
+        let dest_dir_path_str = dest_dir_path.to_string_lossy().into_owned();
 
-        let moved_file_path = dest_dir_path.join("test_file.txt");
-        assert!(
-            moved_file_path.exists(),
-            "Expected file inside moved directory to exist after safe_move"
-        );
-
-        let moved_file_content = read_to_string(moved_file_path)?;
         assert_eq!(
-            moved_file_content, file_content,
-            "Expected moved file content to match original content after safe_move"
+            moved_dir_handle.full_path(),
+            dest_dir_path_str,
+            "Expected returned dir_handle to have the correct destination"
         );
+
+        let expected_files: Vec<String> = vec![
+            dest_dir_path_str.clone(),
+            format!("{dest_dir_path_str}/test_file.txt"),
+        ];
+
+        validate_dir_entries(&dest_dir_path, &expected_files)?;
+        validate_file_contents(
+            format!("{dest_dir_path_str}/test_file.txt").as_str(),
+            file_content,
+        )?;
 
         let std_src_parent_dir = create_temp_dir_and_path()?.0;
         let std_dest_parent_dir = create_temp_dir_and_path()?.0;
@@ -171,22 +196,18 @@ mod same_filesystem_tests {
         );
 
         let std_dest_dir_path = std_dest_parent_dir.path().join(std_dest_dirname);
-        assert!(
-            std_dest_dir_path.exists() && std_dest_dir_path.is_dir(),
-            "Expected destination directory to exist after process mv"
-        );
+        let std_dest_dir_path_str = std_dest_dir_path.to_string_lossy().into_owned();
 
-        let std_moved_file_path = std_dest_dir_path.join("test_file.txt");
-        assert!(
-            std_moved_file_path.exists(),
-            "Expected file inside moved directory to exist after process mv"
-        );
+        let expected_files: Vec<String> = vec![
+            std_dest_dir_path_str.clone(),
+            format!("{}/{}", std_dest_dir_path.display(), "test_file.txt"),
+        ];
 
-        let std_moved_file_content = read_to_string(std_moved_file_path)?;
-        assert_eq!(
-            std_moved_file_content, file_content,
-            "Expected moved file content to match original content after process mv"
-        );
+        validate_dir_entries(&std_dest_dir_path, &expected_files)?;
+        validate_file_contents(
+            format!("{std_dest_dir_path_str}/test_file.txt").as_str(),
+            file_content,
+        )?;
 
         Ok(())
     }
@@ -263,6 +284,7 @@ mod same_filesystem_tests {
         init_test_logger();
 
         let src_dirname = "source_dir";
+        let dest_dirname = "dest_dir";
         let file_contents = vec![
             ("test_file.txt", "test content for directory move operation"),
             (
@@ -278,7 +300,7 @@ mod same_filesystem_tests {
         let dst_parent_dir = setup.dst_parent_dir;
         let dst_parent_dir_handle = setup.dst_parent_handle;
 
-        let dest_dir = dst_parent_dir.child(src_dirname);
+        let dest_dir = dst_parent_dir.child(dest_dirname);
         dest_dir.create_dir_all()?;
         let dest_file = dest_dir.child("dest_file.txt");
         dest_file.write_str("doesn't matter")?;
@@ -292,35 +314,39 @@ mod same_filesystem_tests {
             &DEFAULT_TEST_CEDAR_AUTH,
             src_dir_handle,
             dst_parent_dir_handle,
-            src_dirname,
+            dest_dirname,
             move_options_builder.build().unwrap(),
         )?;
+
+        // The final location of the moved directory should be as a subdir of `dest_dir` because dest_dir wasn't empty
+        let expected_dest_path = format!(
+            "{}/{dest_dirname}/{src_dirname}",
+            dst_parent_dir.to_string_lossy().into_owned()
+        );
+        assert_eq!(
+            moved_dir_handle.full_path(),
+            expected_dest_path,
+            "Expected returned dir_handle to have the correct destination"
+        );
 
         assert!(
             !src_parent_dir.child(src_dirname).exists(),
             "Expected source directory to no longer exist after move"
         );
 
-        let dest_dir_path = dst_parent_dir.path().join(src_dirname);
+        // Validate one level above the moved directory to make sure we didn't clobber existing contents
+        let path_to_validate = dst_parent_dir.path().join(dest_dirname);
+        let path_to_validate_str = path_to_validate.to_string_lossy().into_owned();
 
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after move"
-        );
+        let expected_files: Vec<String> = vec![
+            path_to_validate_str.clone(),
+            format!("{path_to_validate_str}/dest_file.txt"),
+            format!("{path_to_validate_str}/{src_dirname}"),
+            format!("{path_to_validate_str}/{src_dirname}/test_file.txt"),
+            format!("{path_to_validate_str}/{src_dirname}/second_file.txt"),
+        ];
 
-        let entries = moved_dir_handle.safe_list_dir(&DEFAULT_TEST_CEDAR_AUTH)?;
-        let has_test_file = entries.iter().any(|entry| entry.name() == "test_file.txt");
-        let has_second_file = entries
-            .iter()
-            .any(|entry| entry.name() == "second_file.txt");
-        assert!(
-            has_test_file,
-            "Expected moved directory to contain the test file"
-        );
-        assert!(
-            has_second_file,
-            "Expected moved directory to contain the second file"
-        );
+        validate_dir_entries(&path_to_validate, &expected_files)?;
 
         Ok(())
     }
@@ -420,13 +446,9 @@ mod cross_filesystem_tests {
     /// When: The directory is moved using safe_move
     /// Then: The directory is successfully moved to the destination with its contents intact
     #[rstest]
-    #[case::non_verbose(false, false)]
-    #[case::verbose(true, false)]
-    #[case::with_socket(false, true)]
-    fn test_move_dir_cross_fs_success(
-        #[case] verbose: bool,
-        #[case] include_socket: bool,
-    ) -> Result<()> {
+    #[case::non_verbose(false)]
+    #[case::verbose(true)]
+    fn test_move_dir_cross_fs_success(#[case] verbose: bool) -> Result<()> {
         let src_dirname = "source_dir";
         let dest_dirname = src_dirname;
 
@@ -438,9 +460,7 @@ mod cross_filesystem_tests {
             ),
         ];
 
-        if include_socket {
-            file_contents.push(("nested/nested_file.txt", "nested content"));
-        }
+        file_contents.push(("nested/nested_file.txt", "nested content"));
 
         let setup = setup_move_test(src_dirname, file_contents, true)?;
         let src_parent_handle = setup.src_parent_handle;
@@ -450,10 +470,9 @@ mod cross_filesystem_tests {
         let dst_parent_dir = setup.dst_parent_dir;
         let dst_parent_dir_handle = setup.dst_parent_handle;
 
-        if include_socket {
-            let socket_path = src_dir.path().join("nested/test_socket");
-            UnixListener::bind(socket_path)?;
-        }
+        // Add a socket to validate moving a socket across filesystems.
+        let socket_path = src_dir.path().join("nested/test_socket");
+        UnixListener::bind(socket_path)?;
 
         let moved_dir_handle = src_parent_handle.safe_move(
             &DEFAULT_TEST_CEDAR_AUTH,
@@ -472,40 +491,41 @@ mod cross_filesystem_tests {
         );
 
         let dest_dir_path = dst_parent_dir.path().join(dest_dirname);
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after move"
+        let dest_dir_path_str = dest_dir_path.to_string_lossy().into_owned();
+        assert_eq!(
+            moved_dir_handle.full_path(),
+            dest_dir_path_str,
+            "Expected returned dir_handle to have the correct destination"
         );
 
-        let entries = moved_dir_handle.safe_list_dir(&DEFAULT_TEST_CEDAR_AUTH)?;
-        let has_test_file = entries.iter().any(|entry| entry.name() == "test_file.txt");
-        let has_second_file = entries
-            .iter()
-            .any(|entry| entry.name() == "second_file.txt");
-        assert!(
-            has_test_file,
-            "Expected moved directory to contain the test file"
-        );
-        assert!(
-            has_second_file,
-            "Expected moved directory to contain the second file"
-        );
+        let expected_files: Vec<String> = vec![
+            dest_dir_path_str.clone(),
+            format!("{dest_dir_path_str}/test_file.txt"),
+            format!("{dest_dir_path_str}/second_file.txt"),
+            format!("{dest_dir_path_str}/nested"),
+            format!("{dest_dir_path_str}/nested/nested_file.txt"),
+            format!("{dest_dir_path_str}/nested/test_socket"),
+        ];
 
-        if include_socket {
-            let has_nested_dir = entries
-                .iter()
-                .any(|entry| entry.name() == "nested" && entry.is_dir());
-            assert!(
-                has_nested_dir,
-                "Expected moved directory to contain the nested directory"
-            );
+        validate_dir_entries(&dest_dir_path, &expected_files)?;
+        validate_file_contents(
+            format!("{dest_dir_path_str}/test_file.txt").as_str(),
+            "test content for directory move operation",
+        )?;
+        validate_file_contents(
+            format!("{dest_dir_path_str}/second_file.txt").as_str(),
+            "second file content for directory move operation",
+        )?;
+        validate_file_contents(
+            format!("{dest_dir_path_str}/nested/nested_file.txt").as_str(),
+            "nested content",
+        )?;
 
-            let nested_file_path = dest_dir_path.join("nested/nested_file.txt");
-            assert!(
-                nested_file_path.exists(),
-                "Expected nested file to exist after move"
-            );
-        }
+        // When a socket is moved across filesystems, we just create an empty file in its place.
+        validate_file_contents(
+            format!("{dest_dir_path_str}/nested/test_socket").as_str(),
+            "",
+        )?;
 
         Ok(())
     }
@@ -530,7 +550,7 @@ mod cross_filesystem_tests {
         let dest_dir = dest_parent_dir.child(dest_dirname);
         dest_dir.create_dir_all()?;
 
-        src_parent_handle.safe_move(
+        let moved_dir_handle = src_parent_handle.safe_move(
             &DEFAULT_TEST_CEDAR_AUTH,
             src_dir_handle,
             dest_parent_handle,
@@ -538,23 +558,26 @@ mod cross_filesystem_tests {
             MoveOptionsBuilder::default().build().unwrap(),
         )?;
 
-        let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
-
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after move"
-        );
-
         assert!(
             !src_parent_dir.child(src_dirname).exists(),
             "Expected source directory to no longer exist after move"
         );
 
-        let moved_file_path = dest_dir_path.join("src_file.txt");
-        assert!(
-            moved_file_path.exists(),
-            "Expected file inside moved directory to exist"
+        let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
+        let dest_dir_path_str = dest_dir_path.to_string_lossy().into_owned();
+
+        assert_eq!(
+            moved_dir_handle.full_path(),
+            dest_dir_path_str,
+            "Expected returned dir_handle to have the correct destination"
         );
+
+        let expected_files: Vec<String> = vec![
+            dest_dir_path_str.clone(),
+            format!("{dest_dir_path_str}/src_file.txt"),
+        ];
+
+        validate_dir_entries(&dest_dir_path, &expected_files)?;
 
         Ok(())
     }
@@ -591,24 +614,24 @@ mod cross_filesystem_tests {
         );
 
         let dest_dir_path = dest_parent_dir.path().join(dest_dirname);
-        assert!(
-            dest_dir_path.exists() && dest_dir_path.is_dir(),
-            "Expected destination directory to exist after safe_move"
-        );
+        let dest_dir_path_str = dest_dir_path.to_string_lossy().into_owned();
 
-        let entries = moved_dir_handle.safe_list_dir(&DEFAULT_TEST_CEDAR_AUTH)?;
-        let has_test_file = entries.iter().any(|entry| entry.name() == "test_file.txt");
-        assert!(
-            has_test_file,
-            "Expected moved directory to contain the test file after safe_move"
-        );
-
-        let moved_file_path = dest_dir_path.join("test_file.txt");
-        let moved_file_content = std::fs::read_to_string(moved_file_path)?;
         assert_eq!(
-            moved_file_content, file_content,
-            "Expected moved file content to match original content after safe_move"
+            moved_dir_handle.full_path(),
+            dest_dir_path_str,
+            "Expected returned dir_handle to have the correct destination"
         );
+
+        let expected_files: Vec<String> = vec![
+            dest_dir_path_str.clone(),
+            format!("{dest_dir_path_str}/test_file.txt"),
+        ];
+
+        validate_dir_entries(&dest_dir_path, &expected_files)?;
+        validate_file_contents(
+            format!("{dest_dir_path_str}/test_file.txt").as_str(),
+            file_content,
+        )?;
 
         let std_src_dirname = "process_move_source_dir";
         let std_dest_dirname = "process_move_dest_dir";
@@ -642,22 +665,16 @@ mod cross_filesystem_tests {
         );
 
         let std_dest_dir_path = std_dest_parent_dir.path().join(std_dest_dirname);
-        assert!(
-            std_dest_dir_path.exists() && std_dest_dir_path.is_dir(),
-            "Expected destination directory to exist after process mv"
-        );
-
-        let std_moved_file_path = std_dest_dir_path.join("test_file.txt");
-        assert!(
-            std_moved_file_path.exists(),
-            "Expected file inside moved directory to exist after process mv"
-        );
-
-        let std_moved_file_content = std::fs::read_to_string(std_moved_file_path)?;
-        assert_eq!(
-            std_moved_file_content, file_content,
-            "Expected moved file content to match original content after process mv"
-        );
+        let std_dest_dir_path_str = std_dest_dir_path.to_string_lossy().into_owned();
+        let expected_files: Vec<String> = vec![
+            std_dest_dir_path_str.clone(),
+            format!("{std_dest_dir_path_str}/test_file.txt"),
+        ];
+        validate_dir_entries(&std_dest_dir_path, &expected_files)?;
+        validate_file_contents(
+            format!("{std_dest_dir_path_str}/test_file.txt").as_str(),
+            file_content,
+        )?;
 
         Ok(())
     }
@@ -771,9 +788,9 @@ mod cross_filesystem_tests {
     /// When: a cross filesystem safe_move is attempted
     /// Then: safe_move successfully moves src_dir appropriately
     #[rstest]
-    #[case::dest_dir_exists_empty("source_dir", "source_dir", false, false)]
-    #[case::inside_dest_dir_with_content("source_dir", "dest_dir", true, false)]
-    #[case::empty_nested_dir("source_dir", "dest_dir", false, true)]
+    #[case::dest_dir_exists_empty("source_dir", "source_dir", false, false)] // `mv /src_parent/src /dest_parent` where /dest_parent/src exists and is empty
+    #[case::inside_dest_dir_with_content("source_dir", "dest_dir", true, false)] // `mv /src_parent/src /dest_parent/dest` where /dest_parent/dest exists and is NOT empty
+    #[case::empty_nested_dir("source_dir", "dest_dir", false, true)] // `mv /src_parent/src /dest_parent/dest` where /dest_parent/dest/src exists and is empty
     fn test_safe_move_dir_cross_fs_dest_scenarios(
         #[case] src_dirname: &str,
         #[case] dest_dirname: &str,
@@ -822,29 +839,36 @@ mod cross_filesystem_tests {
         );
 
         let expected_dest_path = if create_extra_content || create_empty_nested {
+            // $TMP/dest_dir/source_dir
             dest_dir.path().join(src_dirname)
         } else {
+            // $TMP/source_dir
             dst_parent_dir.path().join(dest_dirname)
         };
 
-        assert!(
-            expected_dest_path.exists() && expected_dest_path.is_dir(),
-            "Expected destination directory to exist after move"
+        let expected_dest_path_str = expected_dest_path.to_string_lossy().into_owned();
+
+        assert_eq!(
+            moved_dir_handle.full_path(),
+            expected_dest_path_str,
+            "Expected returned dir_handle to have the correct destination"
         );
 
-        let entries = moved_dir_handle.safe_list_dir(&DEFAULT_TEST_CEDAR_AUTH)?;
-        let has_test_file = entries.iter().any(|entry| entry.name() == "test_file.txt");
-        let has_second_file = entries
-            .iter()
-            .any(|entry| entry.name() == "second_file.txt");
-        assert!(
-            has_test_file,
-            "Expected moved directory to contain the test file"
-        );
-        assert!(
-            has_second_file,
-            "Expected moved directory to contain the second file"
-        );
+        let mut expected_files: Vec<String> = vec![
+            expected_dest_path_str.clone(),
+            format!("{expected_dest_path_str}/test_file.txt"),
+            format!("{expected_dest_path_str}/second_file.txt"),
+        ];
+
+        if create_extra_content {
+            expected_files.push(dest_dir.to_string_lossy().into_owned());
+            expected_files.push(format!("{}/{}", dest_dir.display(), "asdf"));
+
+            // Validate one level up at the `dest_dir` level to ensure we didn't overwrite the sibling directory.
+            validate_dir_entries(&dest_dir.path().to_path_buf(), &expected_files)?;
+        } else {
+            validate_dir_entries(&expected_dest_path, &expected_files)?;
+        }
 
         Ok(())
     }
@@ -1289,4 +1313,37 @@ fn setup_move_test(
         dst_parent_dir,
         dst_parent_handle,
     })
+}
+
+/// Validates the contents of a directory against a list of expected entry names. The directory itself should be included in the expected entries.
+fn validate_dir_entries(dir_path: &PathBuf, expected_entries: &Vec<String>) -> Result<()> {
+    let find_results = String::from_utf8(
+        std::process::Command::new("find")
+            .arg(dir_path.as_os_str())
+            .output()?
+            .stdout,
+    )?;
+
+    let mut moved = find_results.lines().collect::<Vec<_>>();
+
+    moved.sort();
+
+    let mut expected_entries: Vec<&str> = expected_entries.iter().map(|s| s.as_str()).collect();
+    expected_entries.sort();
+
+    assert_eq!(
+        *expected_entries, moved,
+        "Expected entries did not equal actual entries"
+    );
+
+    Ok(())
+}
+
+fn validate_file_contents(file_path: &str, expected_content: &str) -> Result<()> {
+    let actual_content = read_to_string(file_path)?;
+    assert_eq!(
+        actual_content, expected_content,
+        "File content for path {file_path} does not match expected content"
+    );
+    Ok(())
 }

@@ -820,7 +820,7 @@ impl FindOptionsBuilder {
 ///     .unwrap();
 /// ```
 #[derive(Builder, Debug, Clone, Copy)]
-#[builder(default)]
+#[builder(default, build_fn(error = RustSafeIoError))]
 pub struct DirWalkOptions {
     #[builder(default = "0")]
     pub min_depth: usize,
