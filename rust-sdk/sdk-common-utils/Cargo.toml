@@ -8,7 +8,7 @@ description = "Common utilities shared across REX Rust SDK crates"
 
 [dependencies]
 rex-cedar-auth = { path = "../../core/rex-cedar-auth", version = "0.1.0" }
-cedar-policy = "*"
+cedar-policy = "4.2"
 time = { version = "0.3", features = ["formatting", "macros"] }
 derive-getters = "0.5"
 serde = "1"
