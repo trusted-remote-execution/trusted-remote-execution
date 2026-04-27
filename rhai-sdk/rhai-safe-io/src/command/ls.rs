@@ -1,15 +1,57 @@
 //! `ls` - List directory contents at path
 //!
-//! # Example (Rhai)
-//! ```rhai
-//! // Simple usage
-//! let entries = ls("/path/to/directory");
+//! If the path is a directory, lists its contents (hidden files excluded by default).
+//! If the path is a symlink, returns a single-entry Map with the symlink's `DirEntry`.
 //!
-//! // With flags
-//! let entries = ls([Ls::ALL, Ls::LONG], "/path/to/directory");
+//! # Cedar Permissions
 //!
-//! // Also works on symlinks - returns a single-element list with the symlink entry
-//! let entries = ls("/path/to/symlink");
+//! | Action | Resource |
+//! |--------|----------|
+//! | `file_system::Action::"open"` | [`file_system::Dir::"<absolute_path>"`](rex_cedar_auth::fs::entities::DirEntity) |
+//! | `file_system::Action::"read"` | [`file_system::Dir::"<absolute_path>"`](rex_cedar_auth::fs::entities::DirEntity) |
+//!
+//! # Flags
+//!
+//! | Flag | Alias | Description |
+//! |------|-------|-------------|
+//! | `ls::all` | `ls::a` | Include hidden entries (names starting with `.`) |
+//!
+//! # Returns
+//!
+//! `Map` — keys are filenames (`String`), values are [`DirEntry`](crate::dir_entry::DirEntry) objects
+//! with `name()`, `type()`, `inode()`, `open_as_file()`, `open_as_dir()`, and `metadata()`.
+//!
+//! # Example
+//!
+//! ```
+//! # use rex_test_utils::rhai::safe_io::create_temp_test_env;
+//! # let (mut scope, engine) = create_temp_test_env();
+//! # let result = engine.eval_with_scope::<()>(
+//! # &mut scope,
+//! # r#"
+//! # let dir_handle = DirConfig().path(temp_dir_path).build()
+//! #     .open(OpenDirOptions().create(true).build());
+//! # dir_handle.open_file("file1.txt", OpenFileOptions().create(true).write(true).build())
+//! #     .write("hello");
+//! # dir_handle.open_file(".hidden", OpenFileOptions().create(true).build());
+//! # let path = temp_dir_path;
+//! let entries = ls(path);
+//! for name in entries.keys() {
+//!     print(name);
+//! }
+//!
+//! // Include hidden files
+//! let all_entries = ls([ls::all], path);
+//!
+//! // Access DirEntry values
+//! for entry in entries.values() {
+//!     if entry.type() == EntryType::FILE {
+//!         let fh = entry.open_as_file(OpenFileOptions().read(true).build());
+//!         print(fh.read());
+//!     }
+//! }
+//! # "#);
+//! # assert!(result.is_ok(), "err: {:?}", result.unwrap_err());
 //! ```
 
 use super::open_dir_from_path;
@@ -23,9 +65,7 @@ use std::path::Path;
 /// Flags for the `ls` command, registered as a Rhai custom type.
 ///
 /// Available flags:
-/// - `Ls::ALL` / `Ls::A` — include hidden entries (names starting with '.')
-/// - `Ls::LONG` / `Ls::L` — long listing format (reserved for future use)
-/// - `Ls::RECURSIVE` / `Ls::R` — list subdirectories recursively (reserved for future use)
+/// - `ls::all` / `ls::a` — include hidden entries (names starting with '.')
 #[derive(Debug, Clone)]
 pub(crate) enum LsFlag {
     All,

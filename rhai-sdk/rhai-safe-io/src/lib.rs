@@ -11,7 +11,7 @@ pub mod dir_entry;
 pub mod errors;
 
 // Internal (private modules are hidden from rustdoc)
-pub(crate) mod command;
+pub mod command;
 #[cfg(target_os = "linux")]
 mod elf_info;
 #[cfg(target_os = "linux")]
