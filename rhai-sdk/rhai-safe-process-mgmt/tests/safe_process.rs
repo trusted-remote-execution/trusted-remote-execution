@@ -15,38 +15,40 @@ use std::time::Duration;
 
 /// Given: A Rhai engine with registered process management functions and a policy that allows listing processes
 /// When: A script is run to get processes
-/// Then: The script executes successfully and returns a list of processes with all required fields
+/// Then: The script executes successfully and returns a list of processes from which we validate the fields of the current process
 #[test]
 fn test_get_processes_success() -> Result<(), Box<EvalAltResult>> {
     let engine = create_test_engine_and_register();
     let mut scope = Scope::new();
 
-    // Test script that accesses all fields of a RhaiProcessInfo object
+    let current_pid = process::id() as i64;
+    scope.push("current_pid", current_pid);
+
     let test_script = r#"
         let process_manager = ProcessManager();
         let processes = process_manager.processes();
-        
-        if len(processes) > 0 {{
-            let process = processes[0];
 
-            let pid = process.pid;
-            let name = process.name;
-            let ppid = process.ppid;
-            let uid = process.uid;
-            let username = process.username;
-            let memory_usage = process.memory_usage;
-            let memory_percent = process.memory_percent;
-            let state = process.state;
-            let command = process.command;
+        let process = ();
 
-            process
-        }} else {{
-            // Return an empty array if no processes were found
-            processes
-        }}
+        for p in processes {
+            if p.pid == current_pid {
+                process = p;
+                let pid = process.pid;
+                let name = process.name;
+                let ppid = process.ppid;
+                let uid = process.uid;
+                let username = process.username;
+                let memory_usage = process.memory_usage;
+                let memory_percent = process.memory_percent;
+                let state = process.state;
+                let command = process.command;
+                break;
+            }
+        }
+        process
     "#;
 
-    let result = engine.eval_with_scope::<ProcessInfo>(&mut scope, &test_script)?;
+    let result = engine.eval_with_scope::<ProcessInfo>(&mut scope, test_script)?;
     assert!(*result.pid() > 0);
     assert!(!result.name().is_empty());
     assert!(!result.username().is_empty());
