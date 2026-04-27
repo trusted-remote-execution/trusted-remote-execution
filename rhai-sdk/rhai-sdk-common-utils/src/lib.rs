@@ -8,7 +8,6 @@
 //! operations) that do not require cedar permission validation.
 
 pub mod common_types;
-pub mod duration;
 pub mod random;
 pub use common_types::{DateTime, DateTimeFormat};
 pub mod args;

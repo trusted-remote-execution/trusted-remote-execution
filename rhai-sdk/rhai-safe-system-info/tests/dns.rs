@@ -39,7 +39,7 @@ fn test_resolve_hostname_unauthorized() {
                 let system_info = SystemInfo();
                 let resolve_opts = ResolveOptions()
                     .hostname("localhost")
-                    .timeout(from_secs(5))
+                    .timeout(5)
                     .build();
                 system_info.resolve_hostname(resolve_opts);
             "#,

@@ -11,6 +11,7 @@ use hickory_resolver::name_server::TokioConnectionProvider;
 use hickory_resolver::system_conf::read_system_conf;
 use hickory_resolver::{ResolveError, ResolveErrorKind, TokioResolver};
 use std::net::{IpAddr, SocketAddr};
+use std::time::Duration;
 use sysinfo::System;
 use tokio::runtime::Builder;
 
@@ -136,7 +137,7 @@ impl DNSInfo {
         let opts = builder.options_mut();
         // the builder defaults to Ipv4thenIpv6, but we want both
         opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
-        opts.timeout = config.timeout;
+        opts.timeout = Duration::from_secs(config.timeout);
 
         Ok(builder.build())
     }
@@ -167,7 +168,6 @@ mod tests {
     use crate::options::{ResolveConfigBuilder, TransportProtocol};
     use rex_test_utils::assertions::assert_error_contains;
     use rex_test_utils::io::is_container;
-    use std::time::Duration;
 
     /// Given: A valid hostname with default config
     /// When: The resolve function is called with the hostname
@@ -217,7 +217,7 @@ mod tests {
         let config = ResolveConfigBuilder::default()
             .hostname("WWW.example.com")
             // Use an extremely short timeout that will expire before DNS resolution completes
-            .timeout(Duration::from_nanos(1))
+            .timeout(0)
             .resolver("8.8.8.8")
             .build()
             .unwrap();

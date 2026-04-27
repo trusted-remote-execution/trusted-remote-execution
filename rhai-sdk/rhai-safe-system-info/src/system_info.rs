@@ -295,7 +295,7 @@ impl SystemInfo {
     /// // of 5 seconds
     /// let resolve_opts = ResolveOptions().hostname("localhost")
     ///                                    .resolver("8.8.8.8")
-    ///                                    .timeout(from_secs(10))
+    ///                                    .timeout(10)
     ///                                    .protocol(TransportProtocol::TCP).build();
     /// let addresses = system_info.resolve_hostname(resolve_opts);
     ///

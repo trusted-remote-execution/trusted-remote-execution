@@ -3,7 +3,6 @@ use crate::kernel_stats::{RhaiCpuTime, RhaiKernelStats};
 use rex_cedar_auth::cedar_auth::CedarAuth;
 
 use std::rc::Rc;
-use std::time::Duration;
 
 use rust_safe_system_info::{
     DmesgEntry, DmesgOptions, DmesgOptionsBuilder, Meminfo, ResolveConfig, ResolveConfigBuilder,
@@ -145,7 +144,7 @@ pub(super) fn register(
             (hostname, String),
             (protocol, TransportProtocol),
             (resolver, String),
-            (timeout, Duration)
+            (timeout, i64 => u64)
         ]
     );
 
