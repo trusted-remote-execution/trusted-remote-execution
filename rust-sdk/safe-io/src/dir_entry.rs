@@ -243,6 +243,43 @@ impl DirEntry {
         }
     }
 
+    /// Create a new `DirEntry` from an already-opened `RcSymlinkHandle`.
+    ///
+    /// This constructor is useful when you have already opened a symlink and want to
+    /// create a `DirEntry` for it without needing to list the parent directory.
+    /// The symlink handle is cached in the `opened` field, ensuring TOCTOU safety
+    /// for subsequent operations.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent_dir` - The parent directory handle containing the symlink
+    /// * `symlink_handle` - The already-opened symlink handle
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the symlink metadata cannot be retrieved (needed for inode).
+    ///
+    #[cfg(target_os = "linux")]
+    pub fn from_symlink_handle(
+        parent_dir: &RcDirHandle,
+        symlink_handle: RcSymlinkHandle,
+    ) -> Result<DirEntry, RustSafeIoError> {
+        let name = symlink_handle.symlink_handle.symlink_name.clone();
+        // fstat to populate inode and file_type fields
+        let metadata = symlink_handle.symlink_handle.fd.metadata()?;
+        let file_type = metadata.file_type();
+
+        Ok(DirEntry {
+            name,
+            file_type,
+            entry_type: EntryType::Symlink,
+            inode: metadata.ino(),
+            parent_dir: parent_dir.clone(),
+            opened: Some(OpenedFsEntity::Symlink(symlink_handle)),
+            is_resolved_symlink_entry: false,
+        })
+    }
+
     /// The file type of the `DirEntry`, as represented by `cap_primitives::fs::FileType`. This is not an enum but
     /// rather an object where the type can be queried using `is_file`, `is_dir` or `is_symlink` methods.
     pub const fn dir_entry_type(&self) -> FileType {
