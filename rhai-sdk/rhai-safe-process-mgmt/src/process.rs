@@ -30,7 +30,7 @@ impl ProcessManager {
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `process_system::Action::"list"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) |
+    /// | `process_system::Action::"list"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) |
     ///
     /// # Linux Capabilities
     ///
@@ -173,9 +173,9 @@ impl ProcessManager {
     ///
     /// | Action | Resource | Condition |
     /// |--------|----------|-----------|
-    /// | `process_system::Action::"mount_namespace"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) | When entering mount namespace by pid |
-    /// | `process_system::Action::"network_namespace"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) | When entering network namespace by pid |
-    /// | `file_system::Action::"network_namespace"` | [`file_system::File`](cedar_auth::fs::entities::FileEntity) | When entering network namespace by name |
+    /// | `process_system::Action::"mount_namespace"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) | When entering mount namespace by pid |
+    /// | `process_system::Action::"network_namespace"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) | When entering network namespace by pid |
+    /// | `file_system::Action::"network_namespace"` | [`file_system::File`](rex_cedar_auth::fs::entities::FileEntity) | When entering network namespace by name |
     ///
     /// # Linux Capabilities
     ///
@@ -247,9 +247,9 @@ impl ProcessManager {
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `file_system::Action::"open"` | [`file_system::Dir`](cedar_auth::fs::entities::DirEntity) |
-    /// | `file_system::Action::"read"` | [`file_system::Dir`](cedar_auth::fs::entities::DirEntity) |
-    /// | `process_system::Action::"list_fds"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) |
+    /// | `file_system::Action::"open"` | [`file_system::Dir`](rex_cedar_auth::fs::entities::DirEntity) |
+    /// | `file_system::Action::"read"` | [`file_system::Dir`](rex_cedar_auth::fs::entities::DirEntity) |
+    /// | `process_system::Action::"list_fds"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) |
     ///
     /// # Linux Capabilities
     ///
@@ -290,21 +290,26 @@ impl ProcessManager {
         unreachable!("This method exists only for documentation.")
     }
 
-    /// Lists open files within a directory, similar to `lsof <path>`
+    /// Lists open files, similar to `lsof <path>` or `lsof -p <pid>`
+    ///
+    /// Supports two mutually exclusive modes:
+    /// * **Path mode** — list open files within a directory (like `lsof +d` / `lsof +D`)
+    /// * **PID mode** — list all open files for a specific process (like `lsof -p`)
     ///
     /// # Cedar Permissions
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `file_system::Action::"open"` | [`file_system::Dir`](cedar_auth::fs::entities::DirEntity) |
-    /// | `file_system::Action::"read"` | [`file_system::Dir`](cedar_auth::fs::entities::DirEntity) |
-    /// | `process_system::Action::"list_fds"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) |
+    /// | `file_system::Action::"open"` | [`file_system::Dir`](rex_cedar_auth::fs::entities::DirEntity) |
+    /// | `file_system::Action::"read"` | [`file_system::Dir`](rex_cedar_auth::fs::entities::DirEntity) |
+    /// | `process_system::Action::"list_fds"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) |
     ///
     /// # Linux Capabilities
     ///
     /// | Capability | Condition |
     /// |-----------|-----------|
-    /// | `CAP_SYS_PTRACE` | When reading file descriptors of processes owned by other users |
+    /// | `CAP_SYS_PTRACE` | When reading memory maps of processes owned by other users |
+    /// | `CAP_DAC_READ_SEARCH` | When reading file descriptors of processes owned by other users |
     ///
     /// # Example
     ///
@@ -316,11 +321,18 @@ impl ProcessManager {
     /// #     &mut scope,
     /// #     r#"
     /// let process_manager = ProcessManager();
+    ///
+    /// // Path mode: list open files in a directory
     /// let lsof_options = LsofOptions()
     ///     .path("/tmp")
     ///     .build();
-    ///
     /// let open_files = process_manager.list_open_files(lsof_options);
+    ///
+    /// // PID mode: list all open files for a specific process
+    /// let pid_options = LsofOptions()
+    ///     .pid(1)
+    ///     .build();
+    /// let open_files = process_manager.list_open_files(pid_options);
     ///
     /// for file in open_files {
     ///     print(`PID: ${file.pid}, Process: ${file.process_name}, File: ${file.file_path}, Access: ${file.access}, File Type: ${file.file_type}`)
@@ -346,8 +358,8 @@ impl ProcessManager {
     ///
     /// | Action | Resource | Condition |
     /// |--------|----------|-----------|
-    /// | `process_system::Action::"kill"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) | Default |
-    /// | `process_system::Action::"interrupt"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) | When signal is `SIGHUP` |
+    /// | `process_system::Action::"kill"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) | Default |
+    /// | `process_system::Action::"interrupt"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) | When signal is `SIGHUP` |
     ///
     /// # Linux Capabilities
     ///
@@ -404,9 +416,9 @@ impl ProcessManager {
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `file_system::Action::"open"` | [`file_system::Dir`](cedar_auth::fs::entities::DirEntity) |
-    /// | `file_system::Action::"open"` | [`file_system::File`](cedar_auth::fs::entities::FileEntity) |
-    /// | `file_system::Action::"read"` | [`file_system::File`](cedar_auth::fs::entities::FileEntity) |
+    /// | `file_system::Action::"open"` | [`file_system::Dir`](rex_cedar_auth::fs::entities::DirEntity) |
+    /// | `file_system::Action::"open"` | [`file_system::File`](rex_cedar_auth::fs::entities::FileEntity) |
+    /// | `file_system::Action::"read"` | [`file_system::File`](rex_cedar_auth::fs::entities::FileEntity) |
     ///
     /// NB: Opens `/proc/sysvipc/` directory, then opens and reads `shm`, `msg`, and `sem` files within it.
     ///
@@ -449,16 +461,17 @@ impl ProcessManager {
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `process_system::Action::"trace"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) |
+    /// | `process_system::Action::"trace"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) |
+    ///
     ///
     /// # Overloads
     ///
-    /// * `trace(pid)`              - Returns a trace for the target pid in the default namespace
-    /// * `trace(pid, options)`     - Returns a trace with optional namespace information.
-    /// * `ns_pid`              - The target PID namespace to enter (typically this should be the pid of whatever sandbox process hosts the target pid). When this option
-    ///   is set, the `pid` parameter is the target PID as seen from within the sandbox's PID namespace instead of its global namespace PID. This
-    ///   option will also enter the sandbox's mount namespace to execute the trace operation. Note that `processes()` with
-    ///   `load_namespace_info` option must be run first for this operation to succeed.
+    /// * `trace(pid)`            - Returns a trace for the target pid in the default namespace
+    /// * `trace(pid, options)`   - Returns a trace with optional namespace information.
+    ///   * `ns_pid`              - The target PID namespace to enter (typically this should be the pid of whatever sandbox process hosts the target pid). When this option
+    ///     is set, the `pid` parameter is the target PID as seen from within the sandbox's PID namespace instead of its global namespace PID. This
+    ///     option will also enter the sandbox's mount namespace to execute the trace operation. Note that `processes()` with
+    ///     `load_namespace_info` option must be run first for this operation to succeed.
     ///
     /// # Linux Capabilities
     ///
@@ -512,7 +525,7 @@ impl ProcessManager {
     ///
     /// | Action | Resource |
     /// |--------|----------|
-    /// | `process_system::Action::"list"` | [`process_system::Process`](cedar_auth::process::entities::ProcessEntity) |
+    /// | `process_system::Action::"list"` | [`process_system::Process`](rex_cedar_auth::process::entities::ProcessEntity) |
     ///
     /// # Options
     /// * `pids_to_monitor`: array of pids to monitor CPU usage and other process info

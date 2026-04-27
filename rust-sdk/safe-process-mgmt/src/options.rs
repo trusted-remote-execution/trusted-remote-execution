@@ -90,12 +90,12 @@ pub struct MonitorProcessesCpuOptions {
 
 impl MonitorProcessesCpuOptionsBuilder {
     fn validate(&self) -> Result<(), RustSafeProcessMgmtError> {
-        if let Some(pids) = &self.pids_to_monitor
-            && pids.is_empty()
-        {
-            return Err(RustSafeProcessMgmtError::ValidationError {
-                reason: "PIDs array cannot be empty".to_string(),
-            });
+        if let Some(pids) = &self.pids_to_monitor {
+            if pids.is_empty() {
+                return Err(RustSafeProcessMgmtError::ValidationError {
+                    reason: "PIDs array cannot be empty".to_string(),
+                });
+            }
         }
         Ok(())
     }
@@ -370,9 +370,16 @@ impl KillOptionsBuilder {
 /// ```no_run
 /// use rust_safe_process_mgmt::options::LsofOptionsBuilder;
 ///
+/// // Path-based: list open files in a directory
 /// let options = LsofOptionsBuilder::default()
 ///     .path("/tmp".to_string())
 ///     .include_subdir(true)
+///     .build()
+///     .unwrap();
+///
+/// // PID-based: list all open files for a specific process
+/// let options = LsofOptionsBuilder::default()
+///     .pid(1234_u32)
 ///     .build()
 ///     .unwrap();
 /// ```
@@ -382,28 +389,42 @@ impl KillOptionsBuilder {
     build_fn(error = "RustSafeProcessMgmtError", validate = "Self::validate")
 )]
 pub struct LsofOptions {
-    /// Directory path to scan for open files
-    pub path: String,
-    /// Whether to include subdirectories in the scan (lsof +D)
+    /// Directory path to scan for open files (mutually exclusive with pid)
+    #[builder(default, setter(into, strip_option))]
+    pub path: Option<String>,
+    /// Whether to include subdirectories in the scan (lsof +D). Only used with path.
     #[builder(default = "false")]
     pub include_subdir: bool,
+    /// Process ID to list open files for (mutually exclusive with path)
+    #[builder(default, setter(strip_option))]
+    pub pid: Option<u32>,
 }
 
 impl LsofOptionsBuilder {
     fn validate(&self) -> Result<(), RustSafeProcessMgmtError> {
-        if self.path.is_none() {
+        let has_path = self.path.as_ref().is_some_and(Option::is_some);
+        let has_pid = self.pid.as_ref().is_some_and(Option::is_some);
+
+        if has_path && has_pid {
             return Err(RustSafeProcessMgmtError::ValidationError {
-                reason: "Path is required for lsof options".to_string(),
+                reason: "pid and path are mutually exclusive".to_string(),
             });
         }
 
-        if let Some(path) = &self.path
-            && path.is_empty()
-        {
+        if !has_path && !has_pid {
             return Err(RustSafeProcessMgmtError::ValidationError {
-                reason: "Path cannot be empty".to_string(),
+                reason: "Either path or pid is required".to_string(),
             });
         }
+
+        if let Some(Some(path)) = &self.path {
+            if path.is_empty() {
+                return Err(RustSafeProcessMgmtError::ValidationError {
+                    reason: "Path cannot be empty".to_string(),
+                });
+            }
+        }
+
         Ok(())
     }
 }
@@ -595,19 +616,45 @@ mod tests {
 
         assert!(result.is_ok());
         let options = result.unwrap();
-        assert_eq!(options.path, "/tmp");
+        assert_eq!(options.path, Some("/tmp".to_string()));
     }
 
-    /// Given: LsofOptionsBuilder with no path set
+    /// Given: LsofOptionsBuilder with neither path nor pid set
     /// When: Building LsofOptions
-    /// Then: Should return error indicating path is required
+    /// Then: Should return error indicating path or pid is required
     #[test]
     fn test_lsof_options_no_path_error() {
         let result = LsofOptionsBuilder::default().build();
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Path is required for lsof options"));
+        assert!(error_msg.contains("Either path or pid is required"));
+    }
+
+    /// Given: LsofOptionsBuilder with both path and pid set
+    /// When: Building LsofOptions
+    /// Then: Should return error indicating mutual exclusivity
+    #[test]
+    fn test_lsof_options_pid_and_path_error() {
+        let result = LsofOptionsBuilder::default()
+            .path("/tmp".to_string())
+            .pid(1234_u32)
+            .build();
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("pid and path are mutually exclusive"));
+    }
+
+    /// Given: LsofOptionsBuilder with only pid set
+    /// When: Building LsofOptions
+    /// Then: Should build successfully with pid set and path None
+    #[test]
+    fn test_lsof_options_pid_only() {
+        let options = LsofOptionsBuilder::default().pid(1234_u32).build().unwrap();
+
+        assert_eq!(options.pid, Some(1234));
+        assert_eq!(options.path, None);
     }
 
     /// Given: LsofOptionsBuilder with empty path
@@ -634,7 +681,7 @@ mod tests {
 
         assert!(result.is_ok());
         let options = result.unwrap();
-        assert_eq!(options.path, "/tmp");
+        assert_eq!(options.path, Some("/tmp".to_string()));
         assert!(options.include_subdir);
     }
 
@@ -650,7 +697,7 @@ mod tests {
 
         assert!(result.is_ok());
         let options = result.unwrap();
-        assert_eq!(options.path, "/tmp");
+        assert_eq!(options.path, Some("/tmp".to_string()));
         assert!(!options.include_subdir);
     }
 
@@ -665,7 +712,7 @@ mod tests {
 
         assert!(result.is_ok());
         let options = result.unwrap();
-        assert_eq!(options.path, "/tmp");
+        assert_eq!(options.path, Some("/tmp".to_string()));
         assert!(!options.include_subdir);
     }
 

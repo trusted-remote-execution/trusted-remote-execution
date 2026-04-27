@@ -528,6 +528,64 @@ fn test_process_manager_list_open_files() -> Result<(), Box<EvalAltResult>> {
     Ok(())
 }
 
+/// Given: A Rhai engine with registered process management functions
+/// When: A script is run to list open files by PID (a process we own)
+/// Then: The script executes successfully and returns open files for that process
+#[test]
+fn test_process_manager_list_open_files_by_pid() -> Result<(), Box<EvalAltResult>> {
+    let engine = create_test_engine_and_register();
+    let mut scope = Scope::new();
+
+    let mut child = std::process::Command::new("sleep")
+        .arg("300")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn sleep");
+
+    let pid = child.id();
+
+    let test_script = format!(
+        r#"
+        let process_manager = ProcessManager();
+        let options = LsofOptions().pid({pid}).build();
+        let open_files = process_manager.list_open_files(options);
+        open_files
+        "#
+    );
+
+    let result = engine.eval_with_scope::<Array>(&mut scope, &test_script)?;
+    assert!(!result.is_empty(), "Should have open files for PID {}", pid);
+
+    let _ = child.kill();
+    Ok(())
+}
+
+/// Given: A Rhai engine with registered process management functions
+/// When: A script is run to list open files by an invalid PID
+/// Then: The script fails with ProcessNotFound error
+#[test]
+fn test_process_manager_list_open_files_by_pid_fail() -> Result<(), Box<EvalAltResult>> {
+    let engine = create_test_engine_and_register();
+    let mut scope = Scope::new();
+
+    let test_script = r#"
+        let process_manager = ProcessManager();
+        let options = LsofOptions().pid(999999999).build();
+        process_manager.list_open_files(options);
+    "#;
+
+    let result = engine.eval_with_scope::<Array>(&mut scope, test_script);
+    assert!(result.is_err());
+    let err_msg = result.unwrap_err().to_string();
+    assert!(
+        err_msg.contains("Process not found"),
+        "Error should contain 'Process not found', got: {}",
+        err_msg
+    );
+    Ok(())
+}
+
 /// Given: A Rhai engine with registered process management functions and a policy that allows listing open files
 /// When: A script is run to list open files in a directory that does not exist
 /// Then: The script fails as expected

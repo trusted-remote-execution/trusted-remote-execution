@@ -155,7 +155,7 @@ pub(super) fn register_safe_process_functions(
         LsofOptionsBuilder,
         "LsofOptions",
         LsofOptions,
-        setters: [(path, String), (include_subdir, bool)]
+        setters: [(path, String), (include_subdir, bool), (pid, i64 => u32)]
     );
 
     engine.register_type::<OpenFileInfo>();

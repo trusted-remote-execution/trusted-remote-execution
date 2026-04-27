@@ -552,6 +552,247 @@ fn test_safe_lsof_invalid_path() -> Result<()> {
     Ok(())
 }
 
+/// Given: A non-existent PID
+/// When: Calling safe_lsof with that PID
+/// Then: Should return ProcessNotFound error
+#[test]
+fn test_safe_lsof_by_pid_not_found() -> Result<()> {
+    let test_cedar_auth = TestCedarAuthBuilder::default()
+        .policy(get_default_test_rex_policy())
+        .build()
+        .unwrap()
+        .create();
+
+    let process_manager = RcProcessManager::default();
+    let options = LsofOptionsBuilder::default().pid(999_999_999_u32).build()?;
+
+    let result = process_manager.safe_lsof(&test_cedar_auth, options);
+
+    assert!(result.is_err());
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("does not exist"));
+
+    Ok(())
+}
+
+/// Given: A Cedar policy that denies ListFds
+/// When: Calling safe_lsof with pid option
+/// Then: Should return PermissionDenied error
+#[test]
+fn test_safe_lsof_by_pid_permission_denied() -> Result<()> {
+    let principal = get_test_rex_principal();
+    let test_policy = format!(
+        r#"permit(
+            principal == User::"{principal}",
+            action in [{}, {}],
+            resource
+        );
+        forbid(
+            principal == User::"{principal}",
+            action in [{}],
+            resource
+        );"#,
+        FilesystemAction::Open,
+        FilesystemAction::Read,
+        ProcessAction::ListFds,
+    );
+
+    let test_cedar_auth = TestCedarAuthBuilder::default()
+        .policy(test_policy)
+        .build()
+        .unwrap()
+        .create();
+
+    let process_manager = RcProcessManager::default();
+    let options = LsofOptionsBuilder::default()
+        .pid(std::process::id())
+        .build()?;
+
+    let result = process_manager.safe_lsof(&test_cedar_auth, options);
+
+    assert!(result.is_err());
+    assert!(matches!(
+        result.unwrap_err(),
+        RustSafeProcessMgmtError::PermissionDenied { .. }
+    ));
+
+    Ok(())
+}
+
+/// Given: A process with various FD types (regular file, unix socket, mmap, eventfd)
+/// When: Calling safe_lsof with that process's PID
+/// Then: Should return entries for all FD types with correct FileType variants
+#[test]
+fn test_safe_lsof_by_pid_all_fd_types() -> Result<()> {
+    use std::os::unix::net::UnixListener;
+
+    let test_dir = "/tmp/rex_lsof_pid_fd_types";
+    let _ = std::fs::remove_dir_all(test_dir);
+    std::fs::create_dir_all(test_dir)?;
+
+    // Regular file FD
+    let reg_path = format!("{}/regular.txt", test_dir);
+    std::fs::write(&reg_path, "test content for mmap")?;
+    let _reg_file = std::fs::File::open(&reg_path)?;
+
+    // Unix domain socket
+    let sock_path = format!("{}/test.sock", test_dir);
+    let _listener = UnixListener::bind(&sock_path)?;
+
+    // Memory-mapped file
+    let mmap_file = std::fs::File::open(&reg_path)?;
+    let _mmap = unsafe { memmap2::Mmap::map(&mmap_file)? };
+
+    // Pipe (creates FIFO FDs)
+    let (pipe_read, _pipe_write) = nix::unistd::pipe()?;
+
+    // eventfd (creates AnonInode FD — anon_inode:[eventfd])
+    let eventfd = unsafe { nix::libc::eventfd(0, 0) };
+    assert!(eventfd >= 0, "eventfd creation failed");
+
+    let test_cedar_auth = TestCedarAuthBuilder::default()
+        .policy(get_default_test_rex_policy())
+        .build()
+        .unwrap()
+        .create();
+
+    let process_manager = RcProcessManager::default();
+    let my_pid = std::process::id();
+    let options = LsofOptionsBuilder::default().pid(my_pid).build()?;
+
+    let results = process_manager.safe_lsof(&test_cedar_auth, options)?;
+
+    let file_types: std::collections::HashSet<String> =
+        results.iter().map(|f| f.file_type.to_string()).collect();
+    let access_types: std::collections::HashSet<String> =
+        results.iter().map(|f| f.access_type.to_string()).collect();
+
+    // Verify FD types
+    assert!(file_types.contains("REG"), "Should see REG (regular file)");
+    assert!(file_types.contains("SOCK"), "Should see SOCK (unix socket)");
+    assert!(file_types.contains("DIR"), "Should see DIR (cwd/root)");
+    assert!(file_types.contains("FIFO"), "Should see FIFO (pipe)");
+    assert!(
+        file_types.contains("ANON_INODE"),
+        "Should see a_inode (eventfd)"
+    );
+
+    // Verify access types
+    assert!(access_types.contains("File descriptor"));
+    assert!(access_types.contains("Memory mapped"));
+    assert!(access_types.contains("Working directory"));
+    assert!(access_types.contains("Root directory"));
+    assert!(access_types.contains("Executable"));
+
+    // Verify specific entries
+    assert!(
+        results.iter().any(|f| f.file_path == reg_path),
+        "Should find regular file"
+    );
+    assert!(
+        results.iter().any(|f| f.file_path == sock_path),
+        "Should find unix socket"
+    );
+    assert!(
+        results.iter().any(|f| f.file_path.contains("pipe:")),
+        "Should find pipe"
+    );
+    assert!(
+        results
+            .iter()
+            .any(|f| f.file_path.contains("anon_inode:[eventfd]")),
+        "Should find eventfd"
+    );
+
+    // Cleanup
+    nix::unistd::close(pipe_read)?;
+    unsafe {
+        nix::libc::close(eventfd);
+    }
+    let _ = std::fs::remove_dir_all(test_dir);
+
+    Ok(())
+}
+
+/// Given: A directory with a regular file, unix socket, and nested file
+/// When: Calling safe_lsof on that directory with include_subdir
+/// Then: Should find all targets matching bash lsof +D behavior
+#[test]
+fn test_safe_lsof_finds_all_target_types() -> Result<()> {
+    use std::os::unix::net::UnixListener;
+
+    let test_dir = "/tmp/rex_lsof_all_targets";
+    let _ = std::fs::remove_dir_all(test_dir);
+    std::fs::create_dir_all(test_dir)?;
+
+    // Regular file
+    let reg_file = format!("{}/regular.txt", test_dir);
+    std::fs::write(&reg_file, "test")?;
+    let tail = std::process::Command::new("tail")
+        .args(["-f", &reg_file])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+
+    // Unix domain socket (simulates .s.PGSQL.5432)
+    let sock_path = format!("{}/test.s.PGSQL.5432", test_dir);
+    let _listener = UnixListener::bind(&sock_path)?;
+
+    // Nested file in subdirectory
+    let sub_file = format!("{}/subdir/nested.txt", test_dir);
+    std::fs::create_dir_all(format!("{}/subdir", test_dir))?;
+    std::fs::write(&sub_file, "nested")?;
+    let tail2 = std::process::Command::new("tail")
+        .args(["-f", &sub_file])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
+    let test_cedar_auth = TestCedarAuthBuilder::default()
+        .policy(get_default_test_rex_policy())
+        .build()
+        .unwrap()
+        .create();
+
+    let process_manager = RcProcessManager::default();
+    let options = LsofOptionsBuilder::default()
+        .path(test_dir.to_string())
+        .include_subdir(true)
+        .build()?;
+
+    let results = process_manager.safe_lsof(&test_cedar_auth, options)?;
+    let paths: Vec<&str> = results.iter().map(|f| f.file_path.as_str()).collect();
+
+    // All target types found
+    assert!(
+        paths.iter().any(|p| *p == reg_file),
+        "Should find regular file"
+    );
+    assert!(
+        paths.iter().any(|p| *p == sock_path),
+        "Should find unix socket"
+    );
+    assert!(
+        paths.iter().any(|p| *p == sub_file),
+        "Should find nested file"
+    );
+
+    // Cleanup
+    let _ = nix::sys::signal::kill(
+        nix::unistd::Pid::from_raw(tail.id() as i32),
+        nix::sys::signal::Signal::SIGTERM,
+    );
+    let _ = nix::sys::signal::kill(
+        nix::unistd::Pid::from_raw(tail2.id() as i32),
+        nix::sys::signal::Signal::SIGTERM,
+    );
+    let _ = std::fs::remove_dir_all(test_dir);
+
+    Ok(())
+}
+
 /// Given: ProcessManager is available
 /// When: Getting all processes
 /// Then: Should return a non-empty list of processes with all required fields
@@ -1338,6 +1579,44 @@ fn test_safe_kill_comprehensive_targeting() -> Result<()> {
     Ok(())
 }
 
+/// Given: A fresh RcProcessManager with no prior safe_processes call (empty cache)
+/// When: Calling safe_kill with a valid child process PID
+/// Then: Should lazily cache the process and successfully kill it
+#[test]
+fn test_safe_kill_without_prior_safe_processes() -> Result<()> {
+    init_test_logger();
+    // Fresh manager — cache is empty, no safe_processes call
+    let process_manager = RcProcessManager::default();
+
+    let mut child = Command::new("sleep")
+        .arg("30")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("Failed to spawn child process");
+
+    let child_pid = child.id();
+    sleep(Duration::from_millis(100));
+
+    // Kill directly without calling safe_processes first
+    let kill_options = KillOptionsBuilder::default()
+        .pid(child_pid.into())
+        .signal(Signal::TERM)
+        .build()?;
+
+    let killed = process_manager.safe_kill(&DEFAULT_TEST_CEDAR_AUTH, kill_options)?;
+    assert_eq!(killed.len(), 1, "Should have killed exactly one process");
+    assert_eq!(killed[0].1, child_pid, "Killed PID should match child PID");
+
+    let exit_status = child.wait()?;
+    assert!(
+        !exit_status.success(),
+        "Child should have been terminated by signal"
+    );
+
+    Ok(())
+}
+
 /// Given: A ProcessManager with various error conditions
 /// When: Calling safe_kill with invalid parameters or insufficient permissions
 /// Then: Should handle errors gracefully with appropriate error messages
@@ -1475,44 +1754,6 @@ fn test_safe_kill_race_condition_and_pidfd_errors() -> Result<()> {
     let result = process_manager.safe_kill(&DEFAULT_TEST_CEDAR_AUTH, kill_options);
 
     assert_error_contains(result, "No such process");
-
-    Ok(())
-}
-
-/// Given: A fresh RcProcessManager with no prior safe_processes call (empty cache)
-/// When: Calling safe_kill with a valid child process PID
-/// Then: Should lazily cache the process and successfully kill it
-#[test]
-fn test_safe_kill_without_prior_safe_processes() -> Result<()> {
-    init_test_logger();
-    // Fresh manager — cache is empty, no safe_processes call
-    let process_manager = RcProcessManager::default();
-
-    let mut child = Command::new("sleep")
-        .arg("30")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .expect("Failed to spawn child process");
-
-    let child_pid = child.id();
-    sleep(Duration::from_millis(100));
-
-    // Kill directly without calling safe_processes first
-    let kill_options = KillOptionsBuilder::default()
-        .pid(child_pid.into())
-        .signal(Signal::TERM)
-        .build()?;
-
-    let killed = process_manager.safe_kill(&DEFAULT_TEST_CEDAR_AUTH, kill_options)?;
-    assert_eq!(killed.len(), 1, "Should have killed exactly one process");
-    assert_eq!(killed[0].1, child_pid, "Killed PID should match child PID");
-
-    let exit_status = child.wait()?;
-    assert!(
-        !exit_status.success(),
-        "Child should have been terminated by signal"
-    );
 
     Ok(())
 }
@@ -2031,13 +2272,17 @@ fn test_safe_processes_with_options_with_namespace_info() -> Result<()> {
 
 /// Given: A fresh RcProcessManager with no prior safe_processes call
 /// When: Calling safe_trace_with_namespace with a non-existent PID
-/// Then: Should return error indicating PID namespace not found (cache is lazily populated)
+/// Then: Should return error indicating namespace info not available
 #[test]
 fn test_safe_trace_with_namespace_cache_not_initialized() -> Result<()> {
     let process_manager = RcProcessManager::default();
+    let non_existent_pid: u32 = 999_999_999;
     let trace_options = TraceOptionsBuilder::default().ns_pid(1).build()?;
-    let result =
-        process_manager.safe_trace_with_namespace(&DEFAULT_TEST_CEDAR_AUTH, 999999, trace_options);
+    let result = process_manager.safe_trace_with_namespace(
+        &DEFAULT_TEST_CEDAR_AUTH,
+        non_existent_pid,
+        trace_options,
+    );
 
     assert_error_contains(result, "PID namespace not found");
     Ok(())
