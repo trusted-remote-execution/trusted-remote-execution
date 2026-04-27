@@ -7,13 +7,18 @@
 //!
 //! // With flags
 //! let entries = ls([Ls::ALL, Ls::LONG], "/path/to/directory");
+//!
+//! // Also works on symlinks - returns a single-element list with the symlink entry
+//! let entries = ls("/path/to/symlink");
 //! ```
 
 use super::open_dir_from_path;
 use rex_cedar_auth::cedar_auth::CedarAuth;
 use rhai::{Array, Dynamic, Map};
 use rhai_sdk_common_utils::args::{extract_flags, has_flag};
+use rust_safe_io::error_constants::{NOT_A_DIR, NOT_A_SYMLINK};
 use rust_safe_io::{DirEntry, errors::RustSafeIoError};
+use std::path::Path;
 
 /// Flags for the `ls` command, registered as a Rhai custom type.
 ///
@@ -47,22 +52,86 @@ impl LsOptions {
 }
 
 /// List directory contents
+///
+/// If the path is a directory, lists its contents.
+/// If the path is a symlink, returns a single-element Vec containing the symlink's DirEntry.
 pub(crate) fn ls(
     path: &str,
     options: &LsOptions,
     cedar_auth: &CedarAuth,
 ) -> Result<Vec<DirEntry>, RustSafeIoError> {
-    let dir_handle = open_dir_from_path(path, cedar_auth)?;
-    let entries = dir_handle.safe_list_dir(cedar_auth)?;
-
-    if options.all {
-        Ok(entries)
-    } else {
-        Ok(entries
-            .into_iter()
-            .filter(|e| !e.name().starts_with('.'))
-            .collect())
+    // If the path is a symlink, handle it directly rather than opening the target directory.
+    // open_dir_from_path uses follow_symlinks(true) which would transparently open
+    // the symlink's target directory instead of treating the symlink itself as the entry.
+    if std::fs::symlink_metadata(path)
+        .map(|m| m.file_type().is_symlink())
+        .unwrap_or(false)
+    {
+        return try_ls_as_symlink(path, cedar_auth);
     }
+
+    match open_dir_from_path(path, cedar_auth) {
+        Ok(dir_handle) => {
+            let entries = dir_handle.safe_list_dir(cedar_auth)?;
+
+            if options.all {
+                Ok(entries)
+            } else {
+                Ok(entries
+                    .into_iter()
+                    .filter(|e| !e.name().starts_with('.'))
+                    .collect())
+            }
+        }
+        Err(RustSafeIoError::DirectoryOpenError { ref reason, .. })
+            if reason.starts_with(NOT_A_DIR) =>
+        {
+            try_ls_as_symlink(path, cedar_auth)
+        }
+        Err(ref e) if e.to_string().contains(NOT_A_DIR) => try_ls_as_symlink(path, cedar_auth),
+        Err(e) => Err(e),
+    }
+}
+
+/// Path is not a directory - try to open as symlink.
+/// Only convert NOT_A_SYMLINK errors; propagate auth/IO errors.
+fn try_ls_as_symlink(path: &str, cedar_auth: &CedarAuth) -> Result<Vec<DirEntry>, RustSafeIoError> {
+    try_ls_symlink(path, cedar_auth).map_err(|e| {
+        if matches!(&e, RustSafeIoError::ValidationError { reason } if reason.contains(NOT_A_SYMLINK))
+        {
+            RustSafeIoError::InvalidArguments {
+                reason: format!("ls: {path}: Not a directory or symlink"),
+            }
+        } else {
+            e
+        }
+    })
+}
+
+/// Attempt to list a symlink path by opening it as a symlink and creating a DirEntry.
+fn try_ls_symlink(path: &str, cedar_auth: &CedarAuth) -> Result<Vec<DirEntry>, RustSafeIoError> {
+    let path_obj = Path::new(path);
+
+    let parent_path = path_obj
+        .parent()
+        .map_or_else(|| ".".to_string(), |p| p.to_string_lossy().to_string());
+
+    let name = path_obj
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .ok_or_else(|| RustSafeIoError::InvalidArguments {
+            reason: format!("Invalid path: {path}"),
+        })?;
+
+    let parent_handle = open_dir_from_path(&parent_path, cedar_auth)?;
+
+    // Try to open as symlink - this will fail if it's not a symlink
+    let symlink_handle = parent_handle.safe_open_symlink(cedar_auth, &name)?;
+
+    // Create a DirEntry from the symlink handle
+    let entry = DirEntry::from_symlink_handle(&parent_handle, symlink_handle)?;
+
+    Ok(vec![entry])
 }
 
 /// `ls` wrapper that returns a Rhai Map, with default options

@@ -3,6 +3,8 @@ use assert_fs::prelude::*;
 use rex_test_utils::rhai::common::{create_test_engine_and_register, deny_all_engine};
 use rhai::Map;
 use std::fs;
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::symlink;
 
 fn setup_dir_with_hidden() -> (TempDir, String) {
     let temp = TempDir::new().unwrap();
@@ -128,7 +130,58 @@ fn test_ls_with_combined_all_long_flags() {
     assert!(result.contains_key("file1.txt"));
 }
 
+/// Given: A symlink pointing to a directory
+/// When: Using ls() on the symlink path
+/// Then: A single-element map containing the symlink entry is returned with correct target
+#[test]
+#[cfg(target_os = "linux")]
+fn test_ls_on_symlink_returns_symlink_entry() {
+    // `my_symlink` is a symlink that points to `target_dir`
+    let temp = TempDir::new().unwrap();
+    temp.child("target_dir").create_dir_all().unwrap();
+    temp.child("target_dir/file.txt")
+        .write_str("content")
+        .unwrap();
+    let temp_path = fs::canonicalize(temp.path()).unwrap();
+    let target_dir = temp_path.join("target_dir");
+    let symlink_path = temp_path.join("my_symlink");
+    symlink(&target_dir, &symlink_path).unwrap();
+
+    let engine = create_test_engine_and_register();
+    let script = format!(
+        r#"
+        let entries = ls("{symlink}");
+        let entry = entries["my_symlink"];
+        let meta = metadata(entry);
+        meta.symlink_target()
+        "#,
+        symlink = symlink_path.display()
+    );
+    let symlink_target: String = engine.eval(&script).unwrap();
+
+    // Verify symlink target is correct
+    assert_eq!(symlink_target, target_dir.to_string_lossy());
+}
+
 // ── error cases ─────────────────────────────────────────────────────────────
+
+/// Given: A regular file (not a directory or symlink)
+/// When: Using ls() on the file path
+/// Then: An error is returned with "Not a directory or symlink" message
+#[test]
+fn test_ls_on_regular_file_returns_error() {
+    let temp = TempDir::new().unwrap();
+    temp.child("regular_file.txt").write_str("content").unwrap();
+    let file_path = fs::canonicalize(temp.path().join("regular_file.txt")).unwrap();
+    let engine = create_test_engine_and_register();
+    let result = engine.eval::<Map>(&format!(r#"ls("{}")"#, file_path.display()));
+    assert!(result.is_err());
+    let err_str = format!("{:?}", result.unwrap_err());
+    assert!(
+        err_str.contains("Not a directory or symlink"),
+        "Expected 'Not a directory or symlink' error, got: {err_str}",
+    );
+}
 
 /// Given: A directory that does not exist
 /// When: Using ls() to list the directory
