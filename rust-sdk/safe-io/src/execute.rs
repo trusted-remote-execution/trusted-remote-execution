@@ -420,35 +420,35 @@ fn handle_parent_process(
     stdout_read: OwnedFd,
     stderr_read: OwnedFd,
 ) -> Result<ExecuteResult, RustSafeIoError> {
+    // Spawn threads to read pipes concurrently to prevent deadlock when output exceeds
+    // the 64KB pipe buffer. Without concurrent reading, if the child writes more than
+    // 64KB to stdout/stderr, it will block waiting for the pipe to be drained, while
+    // the parent is waiting for the child to exit - causing a deadlock.
+    let stdout_thread = thread::spawn(move || read_pipe_data(stdout_read));
+    let stderr_thread = thread::spawn(move || read_pipe_data(stderr_read));
+
     let mut sigkill_sent = false;
     let mut log_printed = false;
-    loop {
+    let exit_code = loop {
         match waitpid(child, Some(WaitPidFlag::WNOHANG))? {
             WaitStatus::StillAlive => {
                 // Child is still running, continue monitoring
+                // (pipe reader threads are draining output in the background)
             }
             WaitStatus::Exited(_, code) => {
-                let stdout_data = read_pipe_data(stdout_read)?;
-                let stderr_data = read_pipe_data(stderr_read)?;
-
-                return Ok(ExecuteResult {
-                    exit_code: code,
-                    stdout: String::from_utf8_lossy(&stdout_data).to_string(),
-                    stderr: String::from_utf8_lossy(&stderr_data).to_string(),
-                });
+                break code;
             }
-
             WaitStatus::Signaled(_, signal, _) => {
                 error!(target: RUNNER_AND_SYSLOG_TARGET, "Execute API: Child stopped because it received a signal {signal}");
-                let stdout_data = read_pipe_data(stdout_read)?;
-                let stderr_data = read_pipe_data(stderr_read)?;
-                return Ok(ExecuteResult {
-                    exit_code: -(signal as i32), // Negative indicates signal number
-                    stdout: String::from_utf8_lossy(&stdout_data).to_string(),
-                    stderr: String::from_utf8_lossy(&stderr_data).to_string(),
-                });
+                break -(signal as i32); // Negative indicates signal number
             }
             status => {
+                // Kill child to close pipe ends and unblock reader threads
+                let _ = kill(child, Signal::SIGKILL);
+                let _ = waitpid(child, None);
+                // Join threads to ensure clean shutdown
+                let _ = stdout_thread.join();
+                let _ = stderr_thread.join();
                 return Err(RustSafeIoError::UnexpectedStatus {
                     status: format!("{status:?}"),
                 });
@@ -481,7 +481,24 @@ fn handle_parent_process(
         thread::sleep(Duration::from_millis(
             EXECUTE_API_CHILD_MONITORING_INTERNVAL_MSEC,
         ));
-    }
+    };
+
+    let stdout_data = stdout_thread
+        .join()
+        .map_err(|_| RustSafeIoError::UnexpectedStatus {
+            status: "stdout reader thread panicked".to_string(),
+        })??;
+    let stderr_data = stderr_thread
+        .join()
+        .map_err(|_| RustSafeIoError::UnexpectedStatus {
+            status: "stderr reader thread panicked".to_string(),
+        })??;
+
+    Ok(ExecuteResult {
+        exit_code,
+        stdout: String::from_utf8_lossy(&stdout_data).to_string(),
+        stderr: String::from_utf8_lossy(&stderr_data).to_string(),
+    })
 }
 
 /// This function never returns on success as `fexecve()` replaces the process image.
