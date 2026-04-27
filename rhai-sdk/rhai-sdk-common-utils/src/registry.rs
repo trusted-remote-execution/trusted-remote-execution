@@ -1,8 +1,6 @@
 //! Registration functions for `SDKCommonUtils` types in Rhai.
 //!
 //! This module provides the registration logic to expose utility functions for use in Rhai scripts.
-use std::time::Duration;
-
 use rex_logger::push_rhai_context_with_guard;
 use rex_runner_registrar_utils::{
     register_getters_with_guard, register_with_guard, register_with_no_ctx,
@@ -10,7 +8,6 @@ use rex_runner_registrar_utils::{
 use rust_sdk_common_utils::random::random_alphanumeric;
 use rust_sdk_common_utils::types::datetime::{DateTime, DateTimeFormat};
 
-use crate::duration::duration_module;
 use crate::errors::{ERROR_MODULE_NAME, RhaiCommonUtilsErrorKind, convert_to_rhai_error};
 use rhai::plugin::{
     Engine, FnNamespace, FuncRegistration, Module, NativeCallContext, PluginFunc, RhaiResult,
@@ -129,10 +126,6 @@ fn register_common_types(engine: &mut Engine) {
         );
 
     register_datetime_functions(engine);
-
-    engine
-        .register_type::<Duration>()
-        .register_static_module("Duration", exported_module!(duration_module).into());
 }
 
 /// Registers [`DateTime`] and [`DateTimeFormat`] types and functions with the Rhai engine.

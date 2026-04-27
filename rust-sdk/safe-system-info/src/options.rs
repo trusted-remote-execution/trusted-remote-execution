@@ -4,7 +4,6 @@
 //! operations, each implementing a builder pattern with chainable methods.
 
 use derive_builder::Builder;
-use std::time::Duration;
 
 /// Configuration parameters for reading kernel ring buffer messages
 ///
@@ -68,7 +67,6 @@ impl From<&str> for DnsResolver {
 ///
 /// ```no_run
 /// use rust_safe_system_info::options::{ResolveConfigBuilder, TransportProtocol, DnsResolver};
-/// use std::time::Duration;
 ///
 /// // Simple case - use all defaults
 /// let config = ResolveConfigBuilder::default()
@@ -105,7 +103,7 @@ pub struct ResolveConfig {
     #[builder(default = "DnsResolver::System", setter(into))]
     pub resolver: DnsResolver,
 
-    /// DNS query timeout (default: 5 seconds)
-    #[builder(default = "Duration::from_secs(5)")]
-    pub timeout: Duration,
+    /// DNS query timeout in seconds (default: 5)
+    #[builder(default = "5")]
+    pub timeout: u64,
 }
