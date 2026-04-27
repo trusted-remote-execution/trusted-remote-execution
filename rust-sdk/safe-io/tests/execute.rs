@@ -1045,3 +1045,47 @@ fn test_safe_execute_authorization_error() -> Result<()> {
 
     Ok(())
 }
+
+/// Given: A command that generates output exceeding the 64KB pipe buffer
+/// When: safe_execute is called
+/// Then: All output is captured without deadlock
+#[test]
+fn test_execute_captures_large_stdout_beyond_pipe_buffer() -> Result<()> {
+    let dir_config = DirConfigBuilder::default()
+        .path("/usr/bin".to_string())
+        .build()?;
+
+    let dir_handle = dir_config.safe_open(
+        &DEFAULT_TEST_CEDAR_AUTH,
+        OpenDirOptionsBuilder::default().build().unwrap(),
+    )?;
+
+    let file_handle = dir_handle.safe_open_file(
+        &DEFAULT_TEST_CEDAR_AUTH,
+        "seq",
+        OpenFileOptionsBuilder::default()
+            .read(true)
+            .build()
+            .unwrap(),
+    )?;
+
+    // seq 1 14000 generates ~73KB of output (above 64KB pipe buffer)
+    let args = vec![("1".to_string(), None), ("14000".to_string(), None)];
+
+    let options = ExecuteOptionsBuilder::default().args(args).build().unwrap();
+
+    let result = file_handle.safe_execute(&DEFAULT_TEST_CEDAR_AUTH, options)?;
+
+    assert_eq!(*result.exit_code(), 0);
+    // Verify output exceeds 64KB pipe buffer
+    assert!(
+        result.stdout().len() > 65536,
+        "Output should exceed 64KB pipe buffer, got {} bytes",
+        result.stdout().len()
+    );
+    assert!(result.stdout().starts_with("1\n"));
+    assert!(result.stdout().trim_end().ends_with("14000"));
+    assert!(result.stderr().is_empty());
+
+    Ok(())
+}
