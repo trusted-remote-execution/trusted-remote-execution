@@ -10,8 +10,8 @@ use crate::auth::{is_authorized, is_authorized_with_context};
 use crate::dir::cfg_if;
 use crate::errors::{MoveDetails, RustSafeIoError};
 use crate::options::{
-    CreateSymlinkOptions, DeleteDirOptions, DirWalkOptions, MoveOptions, OpenDirOptionsBuilder,
-    OpenFileOptionsBuilder, SetOwnershipOptions,
+    CreateSymlinkOptions, DeleteDirOptions, DirWalkOptionsBuilder, MoveOptions,
+    OpenDirOptionsBuilder, OpenFileOptionsBuilder, SetOwnershipOptions,
 };
 use crate::recursive::{DirWalk, WalkEntry};
 use crate::{DirEntry, RcDirHandle, RcFileHandle, build_path, get_user_and_group_names};
@@ -334,7 +334,12 @@ impl RcDirHandle {
         );
         let is_nested = dest_path == nested_path;
 
-        for entry in DirWalk::new(src_dir_handle, cedar_auth, &DirWalkOptions::default()) {
+        // Traverse immediate children only - the recursive call to `move_dir_cross_filesystem` will handle nested subdirs.
+        for entry in DirWalk::new(
+            src_dir_handle,
+            cedar_auth,
+            &DirWalkOptionsBuilder::default().max_depth(1).build()?,
+        ) {
             match entry? {
                 WalkEntry::Entry(mut dir_entry) => {
                     if dir_entry.is_file() {

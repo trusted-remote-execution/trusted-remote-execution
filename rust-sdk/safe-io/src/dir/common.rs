@@ -52,6 +52,10 @@ impl RcDirHandle {
     pub(crate) fn basename(&self) -> &str {
         &self.dir_handle.basename
     }
+
+    pub fn full_path(&self) -> &str {
+        &self.dir_handle.dir_config.path
+    }
 }
 
 /// Validates that `file_name_path` is a basename, i.e. a relative path with a single component.
