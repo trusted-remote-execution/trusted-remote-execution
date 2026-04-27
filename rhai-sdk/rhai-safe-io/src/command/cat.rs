@@ -1,12 +1,47 @@
 //! `cat` - Read entire file contents from a path
 //!
-//! # Example (Rhai)
-//! ```rhai
-//! // Simple usage
-//! let content = cat("/path/to/file.txt");
+//! # Cedar Permissions
 //!
-//! // With flags
-//! let content = cat([Cat::NUMBER], "/path/to/file.txt");
+//! | Action | Resource |
+//! |--------|----------|
+//! | `file_system::Action::"open"` | [`file_system::Dir::"<parent_dir>"`](rex_cedar_auth::fs::entities::DirEntity) |
+//! | `file_system::Action::"read"` | [`file_system::File::"<absolute_path>"`](rex_cedar_auth::fs::entities::FileEntity) |
+//!
+//! # Flags
+//!
+//! | Flag | Alias | Description |
+//! |------|-------|-------------|
+//! | `cat::number` | `cat::n` | Number output lines |
+//!
+//! # Returns
+//!
+//! `String` — full file contents, or numbered lines when `cat::number` is used.
+//!
+//! # Example
+//!
+//! ```
+//! # use rex_test_utils::rhai::sysinfo::create_temp_test_env;
+//! # let (mut scope, engine) = create_temp_test_env();
+//! # let result = engine.eval_with_scope::<()>(
+//! # &mut scope,
+//! # r#"
+//! # let dir_handle = DirConfig().path(temp_dir_path).build()
+//! #     .open(OpenDirOptions().create(true).build());
+//! # let file_handle = dir_handle.open_file("test.txt", OpenFileOptions().create(true).write(true).build());
+//! # file_handle.write("hello\nworld");
+//! # let path = temp_dir_path + "/test.txt";
+//! let content = cat(path);
+//!
+//! // With line numbers
+//! let numbered = cat([cat::number], path);
+//! # "#);
+//! # assert!(result.is_ok(), "err: {:?}", result.unwrap_err());
+//! ```
+//!
+//! `cat::number` output:
+//! ```text
+//! 1 hello
+//! 2 world
 //! ```
 
 use super::open_file_from_path;
@@ -18,8 +53,7 @@ use rust_safe_io::errors::RustSafeIoError;
 /// Flags for the `cat` command, registered as a Rhai custom type.
 ///
 /// Available flags:
-/// - `Cat::NUMBER` — number output lines
-/// - `Cat::N` — short form alias for `NUMBER`
+/// - `cat::number` / `cat::n` — number output lines
 #[derive(Debug, Clone)]
 pub(crate) enum CatFlag {
     Number,

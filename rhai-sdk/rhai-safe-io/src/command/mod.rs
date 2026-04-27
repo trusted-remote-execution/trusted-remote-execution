@@ -15,22 +15,22 @@
 //! tail([tail::n(5)], "/path")
 //! ```
 
-mod awk;
-mod cat;
-mod cp;
-mod du;
-mod glob;
-mod grep;
-mod ls;
-mod mkdir;
-mod mv;
-mod rm;
-mod sed;
-mod seq;
-mod tail;
-mod touch;
-mod wc;
-mod write;
+pub mod awk;
+pub mod cat;
+pub mod cp;
+pub mod du;
+pub mod glob;
+pub mod grep;
+pub mod ls;
+pub mod mkdir;
+pub mod mv;
+pub mod rm;
+pub mod sed;
+pub mod seq;
+pub mod tail;
+pub mod touch;
+pub mod wc;
+pub mod write;
 
 pub(crate) use awk::{
     awk_count_unique, awk_field, awk_filter, awk_filter_field, awk_filter_range, awk_split, awk_sum,
