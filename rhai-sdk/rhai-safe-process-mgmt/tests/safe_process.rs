@@ -1102,12 +1102,8 @@ fn test_process_manager_trace_with_namespace_permission_denied() -> Result<(), B
 }
 
 fn should_skip_trace_tests() -> bool {
-    // output == empty => gdb doesn't exist
-    Command::new("command")
-        .args(["-v", "pstack"])
-        .output()
-        .map(|output| String::from_utf8(output.stdout).unwrap_or("".to_string()) == "")
-        .unwrap_or(false)
+    // The trace implementation opens /usr/bin/gstack directly (pstack is a symlink to gstack on AL2)
+    !std::path::Path::new("/usr/bin/gstack").exists()
 }
 
 /// Given: A Rhai engine with registered process management functions and a MonitorProcessesCpuOptions builder
