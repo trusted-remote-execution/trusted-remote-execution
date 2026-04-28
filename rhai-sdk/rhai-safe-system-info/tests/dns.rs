@@ -73,10 +73,6 @@ fn test_resolve_hostname_success(#[case] test_name: &str, #[case] resolve_option
     if is_container() {
         return;
     }
-    if Command::new("nslookup").arg("-version").output().is_err() {
-        println!("Skipping: nslookup not found in this environment");
-        return;
-    }
 
     let principal = get_test_rex_principal();
     let test_policy = format!(

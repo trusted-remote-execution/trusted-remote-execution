@@ -252,6 +252,7 @@ mod tests {
     /// Then: It resolves correctly
     #[test]
     #[cfg(target_os = "linux")]
+    #[ignore = "Requires a DNS server at 127.53.53.53 which may not be available in all environments"]
     fn test_dns_resolve_custom_resolver() {
         if is_container() {
             return;
