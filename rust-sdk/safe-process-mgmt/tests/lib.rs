@@ -1892,6 +1892,7 @@ fn test_safe_ipcs_permission_denied_sysvipc_read() -> Result<()> {
 /// When: Getting process information via safe_processes
 /// Then: Command should be formatted correctly - executable path simplified, argument paths preserved
 #[test]
+#[ignore = "exec -a sets argv[0] via /proc/pid/cmdline which may be empty in containerized CI environments"]
 fn test_command_format_for_exec_process() -> Result<()> {
     let temp_dir = tempdir()?;
     let temp_file = temp_dir.path().join("file.txt");

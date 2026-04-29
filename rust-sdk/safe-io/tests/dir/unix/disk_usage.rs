@@ -224,6 +224,7 @@ fn test_safe_disk_usage_basic() -> Result<()> {
 /// When: safe_disk_usage is called with apparent_size=true
 /// Then: Results match du --apparent-size output
 #[test]
+#[ignore = "From GNU coreutils 9.2 onwards --apparent-size returns 0 for directory st_size instead of 4096"]
 fn test_safe_disk_usage_apparent_size() -> Result<()> {
     let (temp_dir, temp_dir_path) = create_temp_dir_and_path()?;
 
@@ -386,12 +387,24 @@ fn test_safe_disk_usage_hard_link_counting(
 }
 
 /// Given: A directory with empty (0-byte) files
-/// When: safe_disk_usage is called with apparent_size=true and false
-/// Then: apparent_size=true shows 0, apparent_size=false shows block size
-#[rstest]
-#[case::with_apparent_size(true)]
-#[case::without_apparent_size(false)]
-fn test_safe_disk_usage_empty_files(#[case] apparent_size: bool) -> Result<()> {
+/// When: safe_disk_usage is called with apparent_size=true
+/// Then: apparent_size=true shows 0
+#[test]
+#[ignore = "From GNU coreutils 9.2 onwards --apparent-size returns 0 for directory st_size instead of 4096"]
+fn test_safe_disk_usage_empty_files_with_apparent_size() -> Result<()> {
+    let (temp_dir, temp_dir_path) = create_temp_dir_and_path()?;
+
+    temp_dir.child("empty.txt").write_str("")?;
+    temp_dir.child("empty2.txt").write_str("")?;
+
+    compare_with_du(&temp_dir_path, true, true, false, None, false, false, false)
+}
+
+/// Given: A directory with empty (0-byte) files
+/// When: safe_disk_usage is called with apparent_size=false
+/// Then: apparent_size=false shows block size
+#[test]
+fn test_safe_disk_usage_empty_files_without_apparent_size() -> Result<()> {
     let (temp_dir, temp_dir_path) = create_temp_dir_and_path()?;
 
     temp_dir.child("empty.txt").write_str("")?;
@@ -399,16 +412,14 @@ fn test_safe_disk_usage_empty_files(#[case] apparent_size: bool) -> Result<()> {
 
     compare_with_du(
         &temp_dir_path,
-        apparent_size,
+        false,
         true,
         false,
         None,
         false,
         false,
         false,
-    )?;
-
-    Ok(())
+    )
 }
 
 /// Given: A directory structure spanning multiple filesystems
@@ -542,17 +553,14 @@ fn test_safe_disk_usage_all_files_with_max_depth() -> Result<()> {
 }
 
 /// Given: A directory containing special file types (FIFO, socket)
-/// When: safe_disk_usage is called with different options
-/// Then: Special files are handled correctly (0 bytes for sockets/FIFOs, 1 inode, matching du behavior)
-#[rstest]
-#[case::block_size(false)]
-#[case::apparent_size(true)]
-fn test_safe_disk_usage_special_files(#[case] apparent_size: bool) -> Result<()> {
+/// When: safe_disk_usage is called with apparent_size=false (block size)
+/// Then: Special files are handled correctly (0 bytes for sockets/FIFOs, matching du behavior)
+#[test]
+fn test_safe_disk_usage_special_files_block_size() -> Result<()> {
     let (_temp_dir, temp_dir_path) = create_temp_dir_and_path()?;
 
     create_file_with_content(&_temp_dir.path(), "regular.txt", "Regular file")?;
 
-    // Create FIFO
     let fifo_path = _temp_dir.path().join("test.fifo");
     let fifo_path_str = fifo_path.to_string_lossy().to_string();
     Command::new("mkfifo")
@@ -560,22 +568,42 @@ fn test_safe_disk_usage_special_files(#[case] apparent_size: bool) -> Result<()>
         .status()
         .expect("Failed to create FIFO");
 
-    // Create Unix socket
     let socket_path = _temp_dir.path().join("test.sock");
     let _listener = UnixListener::bind(&socket_path)?;
 
     compare_with_du(
         &temp_dir_path,
-        apparent_size,
+        false,
         true,
         false,
         None,
         false,
         false,
         false,
-    )?;
+    )
+}
 
-    Ok(())
+/// Given: A directory containing special file types (FIFO, socket)
+/// When: safe_disk_usage is called with apparent_size=true
+/// Then: Special files are handled correctly (0 bytes for sockets/FIFOs, matching du behavior)
+#[test]
+#[ignore = "From GNU coreutils 9.2 onwards --apparent-size returns 0 for directory st_size instead of 4096"]
+fn test_safe_disk_usage_special_files_apparent_size() -> Result<()> {
+    let (_temp_dir, temp_dir_path) = create_temp_dir_and_path()?;
+
+    create_file_with_content(&_temp_dir.path(), "regular.txt", "Regular file")?;
+
+    let fifo_path = _temp_dir.path().join("test.fifo");
+    let fifo_path_str = fifo_path.to_string_lossy().to_string();
+    Command::new("mkfifo")
+        .arg(&fifo_path_str)
+        .status()
+        .expect("Failed to create FIFO");
+
+    let socket_path = _temp_dir.path().join("test.sock");
+    let _listener = UnixListener::bind(&socket_path)?;
+
+    compare_with_du(&temp_dir_path, true, true, false, None, false, false, false)
 }
 
 /// Given: Root directory Stat permission denied by Cedar  
