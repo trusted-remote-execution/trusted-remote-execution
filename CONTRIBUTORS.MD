@@ -13,7 +13,7 @@ People who have contributed to Trusted Remote Execution.
 - Ivan Feng
 - Jasmine Hung
 - Jenny Fang
-- Jie Wang
+- Jim Wang
 - Joshua Brindle
 - Karen Wang
 - Kwame Bonsu
