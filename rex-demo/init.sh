@@ -12,6 +12,10 @@ mkdir -p /tmp/rex-example
 echo "==> Copying demo files..."
 cp "${SCRIPT_DIR}"/files/* /tmp/rex-example/
 
+# Refresh AWS credentials for Bedrock access
+echo "==> Refreshing AWS credentials..."
+ada credentials update --account=864288099263 --provider=isengard --role=Admin-OneClick --profile=default --once
+
 # Set up Python venv if not already present
 AGENT_DIR="${SCRIPT_DIR}/agent"
 if [ ! -d "${AGENT_DIR}/.venv" ]; then
