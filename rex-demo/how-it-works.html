@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REX — How It Works</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #58a6ff;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #8b949e;
+            margin-bottom: 48px;
+        }
+
+        .top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .panel-header {
+            background: #1c2128;
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #8b949e;
+            border-bottom: 1px solid #30363d;
+        }
+        .panel-body {
+            padding: 20px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        /* Syntax colors */
+        .comment { color: #6e7681; font-style: italic; }
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .function { color: #d2a8ff; }
+        .variable { color: #79c0ff; }
+        .action { color: #7ee787; }
+        .punctuation { color: #e6edf3; }
+
+        /* Output panel */
+        .output-panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .output-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        .output-left {
+            padding: 20px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre;
+            border-right: 1px solid #30363d;
+        }
+        .output-right {
+            padding: 20px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 12px;
+        }
+        .output-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .output-item .icon { flex-shrink: 0; }
+        .output-item .text { color: #c9d1d9; }
+        .output-item .text strong { color: #7ee787; }
+        .output-item .text .denied { color: #f85149; }
+        .output-item .text em { color: #79c0ff; font-style: italic; }
+
+        .tagline {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #8b949e;
+        }
+        .tagline strong {
+            color: #58a6ff;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trusted Remote Execution (Rex)</h1>
+        <p class="subtitle">Secure the environment, not the agent.</p>
+
+        <!-- Top row: Script + Policy -->
+        <div class="top-row">
+            <div class="panel">
+                <div class="panel-header">Script (Rhai)</div>
+                <div class="panel-body"><span class="comment">// Read a file</span>
+<span class="keyword">let</span> <span class="variable">content</span> = <span class="function">cat</span>(<span class="string">"/tmp/rex-example/config.ini"</span>);
+<span class="variable">content</span>
+
+<span class="comment">// Write to a file</span>
+<span class="function">write</span>(<span class="string">"/tmp/rex-example/config.ini"</span>, <span class="string">"level = info"</span>);</div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Policy (Cedar)</div>
+                <div class="panel-body"><span class="comment">// Policy managed by service owner</span>
+<span class="keyword">permit</span>(
+    principal,
+    <span class="keyword">action in</span> [
+        <span class="action">file_system::Action::"open"</span>,
+        <span class="action">file_system::Action::"read"</span>,
+
+        <span class="comment">// --- Uncomment below to allow write operations ---</span>
+        <span class="comment">// file_system::Action::"write"</span>
+    ],
+    resource
+) <span class="keyword">when</span> {
+    resource <span class="keyword">in</span>
+        <span class="action">file_system::Dir::"/tmp/rex-example"</span>
+};</div>
+            </div>
+        </div>
+
+        <!-- Output panel -->
+        <div class="output-panel">
+            <div class="panel-header">Output</div>
+            <div class="output-row">
+                <div class="output-left"><span class="punctuation">[server]</span>
+host = 0.0.0.0
+port = 8443
+workers = 8
+
+<span style="color: #f85149;">error: Permission denied:
+  file_system::Action::"write" for
+  file_system::File::/tmp/rex-example/config.ini</span></div>
+                <div class="output-right">
+                    <div class="output-item" style="margin-top: 20px;">
+                        <span class="icon">✅</span>
+                        <span class="text"><strong>cat()</strong> read the file. The policy permits <em>read</em>, so Cedar allowed it.</span>
+                    </div>
+                    <div style="flex-grow: 1;"></div>
+                    <div class="output-item" style="margin-bottom: 20px;">
+                        <span class="icon">❌</span>
+                        <span class="text"><strong class="denied">write()</strong> was blocked. The policy permits <em>open</em> and <em>read</em> — <span class="denied"><em>write</em> is not listed</span>.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tagline"><strong>Secure the environment, not the agent.</strong></p>
+    </div>
+</body>
+</html>

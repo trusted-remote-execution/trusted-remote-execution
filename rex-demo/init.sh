@@ -60,5 +60,6 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   source "${AGENT_DIR}/.venv/bin/activate"
   AGENT_PY="$(cd "${AGENT_DIR}" && pwd)/agent.py"
   alias ops-agent="python ${AGENT_PY}"
-  echo "==> Agent ready. Use: ops-agent 'your prompt here'"
+  clear
+  echo "✅ Demo ready. Use: ops-agent 'your prompt here'"
 fi

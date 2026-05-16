@@ -1,10 +1,9 @@
-// Policy for /private/tmp/rex-example — managed by service owner
+// Policy managed by service owner
 permit(
     principal,
     action in [
         file_system::Action::"open",
         file_system::Action::"read",
-        file_system::Action::"stat",
 
         // --- Uncomment below to allow write operations ---
         // file_system::Action::"write"
