@@ -66,17 +66,60 @@ if __name__ == "__main__":
     parser.add_argument("prompt", nargs="*", default=["What files are in /tmp/rex-example?"])
     args = parser.parse_args()
 
-    def quiet_callback(**kwargs):
+    # ANSI color codes
+    HEADING = "\033[38;5;110m"  # soft blue
+    COMMAND = "\033[38;5;180m"  # soft gold
+    SCRIPT = "\033[38;5;114m"   # soft green
+    OUTPUT = "\033[2m"          # dim
+    ERROR = "\033[38;5;174m"    # soft pink
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+    output_parts = []
+
+    def collect_callback(**kwargs):
         if "data" in kwargs:
-            text = kwargs["data"]
-            print(text, end="", flush=True)
-            quiet_callback._last = text
-    quiet_callback._last = ""
+            output_parts.append(kwargs["data"])
 
     agent = Agent(
         tools=[run_rex],
         system_prompt=SYSTEM_PROMPT,
-        callback_handler=quiet_callback,
+        callback_handler=collect_callback,
     )
     result = agent(" ".join(args.prompt))
+
+    # Post-process: add colors and spacing
+    full_output = "".join(output_parts)
+    lines = full_output.split('\n')
+    inside_block = False
+    block_index = 0  # track which code block we're in
+
+    for i, line in enumerate(lines):
+        # Section headings
+        if line.startswith('## '):
+            print(f"\n{BOLD}{HEADING}{line}{RESET}")
+            continue
+
+        # Code block fences
+        if line.startswith('```'):
+            if not inside_block:
+                inside_block = True
+                block_index += 1
+            else:
+                inside_block = False
+            continue
+
+        # Content inside code blocks
+        if inside_block:
+            if block_index == 1:
+                print(f"{COMMAND}{line}{RESET}")
+            elif block_index == 2:
+                print(f"{SCRIPT}{line}{RESET}")
+            elif block_index == 3:
+                if 'denied' in line.lower() or 'error' in line.lower() or 'ACCESS_DENIED' in line:
+                    print(f"{ERROR}{line}{RESET}")
+                else:
+                    print(f"{OUTPUT}{line}{RESET}")
+        # Skip anything outside sections/blocks (suppress LLM commentary)
+
     print()
