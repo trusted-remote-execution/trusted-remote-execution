@@ -1,4 +1,4 @@
-# Cedar Runbox — Getting Started Guide
+# Trusted Remote Execution — Getting Started Guide
 
 This guide walks through three progressively more advanced demos of Rex, a secure
 script execution engine that uses Cedar policies to control what scripts can do.
@@ -125,16 +125,7 @@ Run the write script with the read-only policy (should be denied by Cedar):
 ./example/setup/ssm-client/run-rex-ro.sh /tmp/rex_example/write-test.rhai
 ```
 
-### Step 3: Create custom SSM documents (optional)
-
-Create `Rex-RO` and `Rex-RW` documents that hardcode the Cedar policy. The
-caller can only choose which script to run, not which policy:
-
-```bash
-./example/setup/ssm-server/create-ssm-documents.sh
-```
-
-### Step 4: Grant cross-account access (optional)
+### Step 3: Grant cross-account access (optional)
 
 Allow another AWS account to invoke the Rex documents:
 
